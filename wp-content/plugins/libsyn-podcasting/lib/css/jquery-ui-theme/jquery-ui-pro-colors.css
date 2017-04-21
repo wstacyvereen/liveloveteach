@@ -1,0 +1,46 @@
+/* Jquery UI */
+
+
+
+	/* Interaction states
+	----------------------------------*/
+	.ui-state-default,
+	.ui-widget-content .ui-state-default,
+	.ui-widget-header .ui-state-default {
+		border: 1px solid #e0ac13;
+		background: #e08b15 url(/css/jquery-ui-theme/images/ui-bg_highlight-soft_40_e08b15_1x100.png) 50% 50% repeat-x;
+	}
+	
+	.ui-state-hover,
+	.ui-widget-content .ui-state-hover,
+	.ui-widget-header .ui-state-hover,
+	.ui-state-focus,
+	.ui-widget-content .ui-state-focus,
+	.ui-widget-header .ui-state-focus {
+		border: 1px solid #e0ac13;
+		background: #e08b15 url(/css/jquery-ui-theme/images/ui-bg_highlight-hard_55_e08b15_1x100.png) 50% 50% repeat-x;
+		color: #ffffff;
+	}
+	
+	div#main-content a.ui-state-hover {
+		color: #ffffff	
+	}	
+	
+	.ui-state-active,
+	.ui-widget-content .ui-state-active,
+	.ui-widget-header .ui-state-active {
+		border: 1px solid #e0ac13;
+		background:none;
+		background-color: #fff;
+		color:#000;
+	}
+
+	/* Interaction Cues
+	----------------------------------*/
+	.ui-state-highlight,
+	.ui-widget-content .ui-state-highlight,
+	.ui-widget-header .ui-state-highlight {
+		border: 1px solid #e0ac13;
+	}
+
+/* End Jquery UI */
