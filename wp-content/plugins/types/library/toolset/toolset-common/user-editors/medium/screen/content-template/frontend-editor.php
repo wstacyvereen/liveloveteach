@@ -200,7 +200,7 @@ class Toolset_User_Editors_Medium_Screen_Content_Template_Frontend_Editor
 			echo __( 'Preview this Content Template with:', 'wpv-views' );
 
 			echo ' <select id="wpv-ct-preview-post">';
-			echo '<option value="0"' . $selected . '>'.__( 'No post', 'wp-views' ).'</option>';
+			echo '<option value="0"' . $selected . '>'.__( 'No post', 'wpv-views' ).'</option>';
 
 			foreach( $preview_posts as $single_post ) {
 				$selected = $preview_post == $single_post['ID']

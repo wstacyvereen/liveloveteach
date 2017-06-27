@@ -1,5 +1,5 @@
 OnTheGo Resources 2.0 (December 22, 2016)
-	- - Improved assets loading so it can also happen in the frontend on demand
+	- Improved assets loading so it can also happen in the frontend on demand
 
 -------------------------------------------------------------------------------------------------------------------
 OnTheGo Resources 1.9 (December 5, 2016)

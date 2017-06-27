@@ -6,7 +6,7 @@ class WPToolset_Field_Date_Scripts {
 
         global $pagenow;
 
-	    $is_frontend = ( !is_admin() );
+	    $is_frontend = ( !Toolset_Utils::is_real_admin() );
 
 	    $current_admin_page = isset( $_GET['page'] ) ? sanitize_text_field( $_GET['page'] ) : null;
 	    $field_group_edit_pages = array( 'wpcf-edit-usermeta', 'wpcf-edit', 'wpcf-termmeta-edit' );
@@ -16,7 +16,7 @@ class WPToolset_Field_Date_Scripts {
 		    'profile.php', 'post-new.php', 'user-edit.php', 'user-new.php', 'post.php', 'admin-ajax.php',
 		    'edit-tags.php', 'term.php'
 	    );
-	    $is_edit_page = ( is_admin() && in_array( $pagenow, $backend_field_edit_pages ) );
+	    $is_edit_page = ( !$is_frontend && in_array( $pagenow, $backend_field_edit_pages ) );
 
 	    /**
 	     * Allows for overriding the conditions for enqueuing scripts for date field.
@@ -39,7 +39,7 @@ class WPToolset_Field_Date_Scripts {
     public function date_enqueue_scripts() {
 
     	// Prevent loading scripts on custom field group edit screen
-	    if ( is_admin() ) {
+	    if ( Toolset_Utils::is_real_admin() ) {
 		    $screen = get_current_screen();
 		    if ( 'types_page_wpcf-edit' == $screen->id ) {
 			    return;
@@ -141,14 +141,14 @@ class WPToolset_Field_Date_Scripts {
 	 * @since 2.3
 	 */
 	private function try_registering_datepicker_localization_script( $language_code ) {
-    	$script_path = WPTOOLSET_FORMS_ABSPATH . '/js/i18n/jquery.ui.datepicker-' . $language_code . '.js';
-    	if( ! file_exists( $script_path ) ) {
+    	$script_path =  '/js/i18n/jquery.ui.datepicker-' . $language_code . '.js';
+    	if( ! file_exists( WPTOOLSET_FORMS_ABSPATH . $script_path ) ) {
     		return false;
 	    }
 
 		wp_register_script(
 			"jquery-ui-datepicker-local-{$language_code}",
-			$script_path,
+			WPTOOLSET_FORMS_RELPATH . $script_path,
 			array( 'jquery-ui-core', 'jquery', 'jquery-ui-datepicker' ),
 			WPTOOLSET_FORMS_VERSION,
 			true

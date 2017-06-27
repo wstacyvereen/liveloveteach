@@ -28,8 +28,21 @@ if ( file_exists( dirname(__FILE__) . '/editor-addon-generic.class.php') && !cla
 			return;
 		}
 		
-		// Backwards compatibility: Views < 2.3.0 might call this.
+		/**
+		 * Backwards compatibility: Views < 2.3.0 might call this.
+		 *
+		 * @until 2.5.0
+		 */
 		function render_shortcodes_wrapper_dialogs() {
+			return;
+		}
+		
+		/**
+		 * Backwards compatibility: Views < 2.3.0 might call this.
+		 *
+		 * @until 2.5.0
+		 */
+		function add_fields_views_button() {
 			return;
 		}
 

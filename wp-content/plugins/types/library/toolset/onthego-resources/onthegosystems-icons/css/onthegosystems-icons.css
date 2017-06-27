@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "onthegosystems-icons";
-  src: url("../fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.eot");
-  src: url("../fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.eot?#iefix") format("embedded-opentype"),
-       url("../fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.woff") format("woff"),
-       url("../fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.ttf") format("truetype"),
-       url("../fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.svg#onthegosystems-icons") format("svg");
+  src: url("../fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.eot");
+  src: url("../fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.eot?#iefix") format("embedded-opentype"),
+       url("../fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.woff") format("woff"),
+       url("../fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.ttf") format("truetype"),
+       url("../fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.svg#onthegosystems-icons") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "onthegosystems-icons";
-    src: url("../fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.svg#onthegosystems-icons") format("svg");
+    src: url("../fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.svg#onthegosystems-icons") format("svg");
   }
 }
 
@@ -43,9 +43,12 @@
 .icon-layouts-genesis-logo:before,
 .icon-layouts-logo:before,
 .icon-list-group:before,
+.icon-many-to-many:before,
 .icon-module:before,
 .icon-module-logo:before,
 .icon-navbar:before,
+.icon-one-to-many:before,
+.icon-one-to-one:before,
 .icon-packager:before,
 .icon-packager-logo:before,
 .icon-panels:before,
@@ -95,9 +98,12 @@
 .icon-layouts-genesis-logo:before { content: "\f127"; }
 .icon-layouts-logo:before { content: "\f117"; }
 .icon-list-group:before { content: "\f130"; }
+.icon-many-to-many:before { content: "\f138"; }
 .icon-module:before { content: "\f118"; }
 .icon-module-logo:before { content: "\f119"; }
 .icon-navbar:before { content: "\f131"; }
+.icon-one-to-many:before { content: "\f139"; }
+.icon-one-to-one:before { content: "\f13a"; }
 .icon-packager:before { content: "\f120"; }
 .icon-packager-logo:before { content: "\f121"; }
 .icon-panels:before { content: "\f133"; }

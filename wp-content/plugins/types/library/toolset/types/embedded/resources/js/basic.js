@@ -20,13 +20,6 @@ if( typeof typesStatusBasicJsScript === 'undefined' ) {
     jQuery( document ).ready( function() {
 
         /**
-         * remove any jqueryui theme css loaded
-         */
-        jQuery( 'link' ).filter( function() {
-            return jQuery( this ).attr( 'href' ).match( /jqueryui(.*)themes/ );
-        } ).remove();
-
-        /**
          * check description field
          */
         if( jQuery( '.js-wpcf-toggle-description' ) ) {

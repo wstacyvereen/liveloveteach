@@ -147,3 +147,49 @@ li.js-editor-bs-button-wrapper {
 li.js-editor-addon-button-wrapper.js-editor-bs-button-wrapper {
     margin: 0 2px 5px 2px;
 }
+
+.toolset-bootstrap-grid-types-container {
+	overflow: hidden;
+}
+
+.toolset-bootstrap-grid-types-documentation {
+	margin-top: 30px;
+}
+
+.toolset-bootstrap-grid-types li {
+	cursor: pointer;
+	display: block;
+	float: left;
+	height: 120px;
+	margin: 0;
+	padding: 0;
+	width: 33.333%;
+}
+
+.toolset-bootstrap-grid-types figure:hover {
+	background-color: #ededed;
+}
+
+.toolset-bootstrap-grid-types figure.selected {
+	background-color: #ffda73;
+	border: solid 1px rgb(255, 188, 0);
+}
+
+.toolset-bootstrap-grid-types .selected {
+	background: #ededed;
+}
+
+.toolset-bootstrap-grid-types figure {
+	margin: 0;
+	padding: 10px;
+}
+
+.toolset-bootstrap-grid-types img {
+	width: 100%;
+	margin: 0 auto;
+}
+
+.toolset-bootstrap-grid-types figure span {
+	display: block;
+	text-align: center;
+}

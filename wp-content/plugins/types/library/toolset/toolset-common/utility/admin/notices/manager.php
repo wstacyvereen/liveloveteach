@@ -100,11 +100,13 @@ class Toolset_Admin_Notices_Manager {
 	 * called on WordPress hook 'admin_notices'
 	 */
 	public static function show_notices() {
-		if( empty( self::$notices ) ) {
+		$notices = apply_filters( 'toolset-admin-notices-manager-show-notices', self::$notices );
+
+		if( empty( $notices ) ) {
 			return;
 		}
 
-		foreach( self::$notices as $notice ) {
+		foreach( $notices as $notice ) {
 			if( ! $notice->conditions_met() || self::is_notice_dismissed( $notice ) ) {
 				// visitor don't want to see the message anymore
 				continue;
@@ -262,7 +264,7 @@ class Toolset_Admin_Notices_Manager {
         }
 
         $user_settings = get_user_meta( $user_id, self::ID, true );
-        $user_settings = empty( $user_settings ) ? array() : $user_settings;
+	    $user_settings = empty( $user_settings ) ? array() : $user_settings;
 	    $user_settings[ self::OPTION_FIELD_DISMISSED_NOTICE ][ $notice_id ] = true;
 	    update_user_meta( $user_id, self::ID, $user_settings );
     }

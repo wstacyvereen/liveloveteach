@@ -99,13 +99,10 @@ class WPCF_WPViews {
 			echo '
 			<style>
 				#colorbox.js-wpcf-colorbox-with-iframe { z-index: 110000 !important; }
-			</style>
-			<script type="text/javascript">
-				//<![CDATA[
-				var types = ' . json_encode( $types_fields_shortcodes_settings ) . ';
-				//]]>
-			</script>';
+			</style>';
+			wp_localize_script( 'types', 'types', $types_fields_shortcodes_settings );
 		}
+
 		wp_enqueue_script( 'types' );
 		wp_enqueue_script( 'types-wp-views' );
 		wp_enqueue_script( 'toolset-colorbox' );

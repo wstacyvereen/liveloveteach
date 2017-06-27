@@ -18,29 +18,29 @@ class WPToolset_Field_Select extends FieldFactory {
         $data = $this->getData();
         $attributes = $this->getAttr();
         $form = $options = array();
-        $is_multiselect = array_key_exists('multiple', $attributes) && 'multiple' == $attributes['multiple'];
+        $is_multiselect = array_key_exists( 'multiple', $attributes ) && 'multiple' == $attributes['multiple'];
 
-        if (!$is_multiselect) {
-            if (!isset($data['default_value'])) {
+        if ( !$is_multiselect ) {
+            if ( !isset( $data['default_value'] ) ) {
                 $options[] = array(
                     '#value' => '',
-                    '#title' => __('--- not set ---', 'wpv-views'),
+                    '#title' => __( '--- not set ---', 'wpv-views' ),
                 );
             }
             /**
              * default_value
              */
-            if (!empty($value) || $value == '0') {
+            if ( !empty( $value ) || $value == '0' ) {
                 $data['default_value'] = $value;
             }
         }
 
-        if (isset($data['options'])) {
+        if ( isset( $data['options'] ) ) {
 
-            if (!is_admin()) {
+            if ( !Toolset_Utils::is_real_admin() ) {
                 $new_options = array();
-                foreach ($data['options'] as $key => $option) {
-                    if (isset($option['types-value'])) {
+                foreach ( $data['options'] as $key => $option ) {
+                    if ( isset( $option['types-value'] ) ) {
                         $tmp = $option['value'];
                         $option['value'] = $option['types-value'];
                         $option['types-value'] = $tmp;
@@ -48,15 +48,15 @@ class WPToolset_Field_Select extends FieldFactory {
                         $option['types-value'] = $option['value'];
                     }
                     $new_options[$key] = $option;
-                    unset($tmp);
+                    unset( $tmp );
                 }
                 $data['options'] = $new_options;
             }
 
-            foreach ($data['options'] as $key => $option) {
+            foreach ( $data['options'] as $key => $option ) {
                 $one_option_data = array(
                     '#value' => $option['value'],
-                    '#title' => stripslashes($option['title']),
+                    '#title' => stripslashes( $option['title'] ),
                 );
 
                 /**
@@ -76,16 +76,16 @@ class WPToolset_Field_Select extends FieldFactory {
          * display
          */
         $title = $this->getTitle();
-        if (empty($title)) {
-            $title = $this->getTitle(true);
+        if ( empty( $title ) ) {
+            $title = $this->getTitle( true );
         }
-        $options = apply_filters('wpt_field_options', $options, $title, 'select');
-        $default_value = isset($data['default_value']) ? $data['default_value'] : null;
-        
+        $options = apply_filters( 'wpt_field_options', $options, $title, 'select' );
+        $default_value = isset( $data['default_value'] ) ? $data['default_value'] : null;
+
         //Fix https://icanlocalize.basecamphq.com/projects/7393061-toolset/todo_items/189219391/comments
-        if ($is_multiselect && !empty($default_value)) {
-            $default_value = new RecursiveIteratorIterator(new RecursiveArrayIterator($default_value));
-            $default_value = iterator_to_array($default_value, false);
+        if ( $is_multiselect && !empty( $default_value ) ) {
+            $default_value = new RecursiveIteratorIterator( new RecursiveArrayIterator( $default_value ) );
+            $default_value = iterator_to_array( $default_value, false );
         }
         //##############################################################################################
 

@@ -1,19 +1,35 @@
 # Toolset Common Library
 
-# 2.3
+## 2.4.1
+- Removed notices, to push users to activate Layouts theme integration plugins based on the current theme
+- Added filter to remove/add automatic notices on demand
 
- - Various fixes and adjustments for CRED 1.8.6
+## 2.4.0
+- Updated Font Awesome library to 4.7.0
+- Included a mechanism to insert Bootstrap grid rows into selected Toolset editors.
+- Included the needed changes for providing Bootstrap compatible output to CRED frontend forms.
+- Improved the shared admin notices so they only get displayed for admins.
+- Included the Chosen library as alternative to select2.
+- Fixed an issue with a missing CRED datepicker stylesheet.
+- Fixed an issue with link elements of Visual Composer when used as editor in Content Templates.
+- Moved a CSS rule regarding jQuery UI datepicker, that was removed from Types.
 
-## 2.3-Beta3
 
- - Adds callback methods for wpPointer object onOpen and onClose
+## 2.3.2
+- Fixed localization issue with date field and WordPress below 4.7
+- Most notices are now only shown to Administrators.
 
-## 2.3-Beta2
+## 2.3.1
 
-- Allows user to ask Toolset to load Bootstrap library for them, or alternatively set the Bootstrap version they are using on their own
+- Improved the styling for CRED file-related fields.
+- Fixed some compatibility issues with PHP 7.1
+- Fixed taxonomy suggestions on CRED forms.
 
 ## 2.3.0
 
+- Various fixes and adjustments for CRED 1.8.6
+- Adds callback methods for wpPointer object onOpen and onClose
+- Allows user to ask Toolset to load Bootstrap library for them, or alternatively set the Bootstrap version they are using on their own
 - layouts-1239: Added Toolset_Admin_Notice_Layouts_Help
 - Extend the post objects relationships management with two actions to gather data on demand.
 - Only include the jQuery datepicker stylesheet on demand when the current page contains a datepicker from Toolset.
@@ -23,6 +39,7 @@
 - toolsetcommon-144: Added Toolset_Admin_Notices_Manager
 - toolsetcommon-137: Make the toolset-forms classes autoloaded.
 - toolsetcommon-140: Improve a way to detect the status of WPML.
+- toolsetcommon-142: Use get_user_locale() instead of get_locale() if it's available.
 
 ## 2.2.10
 

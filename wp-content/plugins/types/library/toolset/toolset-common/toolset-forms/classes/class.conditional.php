@@ -78,8 +78,20 @@ class WPToolset_Forms_Conditional {
         // Render settings
         add_action('admin_print_footer_scripts', array($this, 'renderJsonData'), 30);
         add_action('wp_footer', array($this, 'renderJsonData'), 30);
-        // Check conditional and hide field
-        add_action('wptoolset_field_class', array($this, 'actionFieldClass'));
+        
+		/**
+		 * @deprecated 2.4.0
+		 * @deprecated 1.9.0 CRED
+		 */
+        add_action('wptoolset_field_class', array($this, 'wptoolset_field_class_deprecated'));
+
+	    /**
+	     * Adds necessary CSS classes to fields with conditional output data.
+	     *
+		 * @since 2.4.0
+	     * @since 1.9.0 CRED
+	     */
+        add_filter('toolset_field_additional_classes', array($this, 'actionFieldClass'), 10, 2);
     }
 
     /**
@@ -439,18 +451,38 @@ class WPToolset_Forms_Conditional {
         echo json_encode($res);
         die();
     }
+	
+	/**
+	 * Callback for a deprecated action.
+	 *
+	 * @since 2.4.0
+	 */
+	public function wptoolset_field_class_deprecated() {
+		_doing_it_wrong(
+			'wptoolset_field_class', 
+			__( 'This action was deprecated in CRED 1.9.0.', 'wpv-views' ),
+			'1.9.0'
+		);
+	}
 
     /**
-     * Checks conditional and hides field.
-     *
-     * @param type $config
+     * Check conditionals for a field and generate the related classnames for its metaform.
+	 *
+	 * @param string $classes The classnames fo the field
+	 * @param array  $config  The field configuration
+	 *
+	 * @return string
+	 *
+	 * @since unknown
+	 * @since 2.4.0 Turn into a filter callback, hence make it return instead of echo.
      */
-    public function actionFieldClass($config) {
+    public function actionFieldClass($classes, $config) {
         if (
                 !empty($config['conditional']) && array_key_exists('conditions', $config['conditional']) && !self::evaluate($config['conditional'])
         ) {
-            echo ' wpt-hidden js-wpt-remove-on-submit js-wpt-validation-ignore';
+            $classes .= ' wpt-hidden js-wpt-remove-on-submit js-wpt-validation-ignore';
         }
+		return $classes;
     }
 
     /**

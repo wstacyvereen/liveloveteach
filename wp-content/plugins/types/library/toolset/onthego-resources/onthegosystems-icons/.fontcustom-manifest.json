@@ -1,13 +1,13 @@
 {
   "checksum": {
-    "previous": "c2bf5434fb5ba6db313a98fb4e1bf3479154a52d11ff65763e7707dfe4069a7b",
-    "current": "c2bf5434fb5ba6db313a98fb4e1bf3479154a52d11ff65763e7707dfe4069a7b"
+    "previous": "66f9f492f35a2f7dd54f8e6f1fdc63d54e4c77bfcca113a87be1270cec4983bc",
+    "current": "66f9f492f35a2f7dd54f8e6f1fdc63d54e4c77bfcca113a87be1270cec4983bc"
   },
   "fonts": [
-    "fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.ttf",
-    "fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.svg",
-    "fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.woff",
-    "fonts/onthegosystems-icons_c2bf5434fb5ba6db313a98fb4e1bf347.eot"
+    "fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.ttf",
+    "fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.svg",
+    "fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.woff",
+    "fonts/onthegosystems-icons_66f9f492f35a2f7dd54f8e6f1fdc63d5.eot"
   ],
   "glyphs": {
     "access": {
@@ -90,6 +90,10 @@
       "codepoint": 61744,
       "source": "vectors/list-group.svg"
     },
+    "many-to-many": {
+      "codepoint": 61752,
+      "source": "vectors/many-to-many.svg"
+    },
     "module": {
       "codepoint": 61720,
       "source": "vectors/module.svg"
@@ -101,6 +105,14 @@
     "navbar": {
       "codepoint": 61745,
       "source": "vectors/navbar.svg"
+    },
+    "one-to-many": {
+      "codepoint": 61753,
+      "source": "vectors/one-to-many.svg"
+    },
+    "one-to-one": {
+      "codepoint": 61754,
+      "source": "vectors/one-to-one.svg"
     },
     "packager": {
       "codepoint": 61728,

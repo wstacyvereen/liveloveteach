@@ -218,23 +218,15 @@ class Toolset_Controller_Admin_Notices {
 		}
 
 		// commercial plugin active + theme we have an integration plugin for
-		$this->layouts_theme_integration_available();
-		$this->layouts_theme_integration_not_active();
-		$theme_integration_active_but_theme_not = $this->layouts_theme_integration_theme_not_active();
 		$this->integration_run_installer();
 
-		// no integration plugin installed, for which theme exists (but not active)
 		// + commercial plugin active
 		// + types || views || layouts missing
-		// + theme active we have no integration plugin for
-		if( ( ! $theme_integration_active_but_theme_not instanceof Toolset_Condition_Interface
-		      || ! $theme_integration_active_but_theme_not->conditions_met() )
-		    && ( ! $this->is_views_active
-		         || ! $this->is_types_active
-		         || ! $this->is_layouts_active
-		    )
+		if(  ! $this->is_views_active
+	         || ! $this->is_types_active
+	         || ! $this->is_layouts_active
 		) {
-			$this->layouts_no_theme_integration_available();
+			$this->types_views_or_layouts_missing();
 		}
 	}
 
@@ -291,63 +283,11 @@ class Toolset_Controller_Admin_Notices {
 	/**
 	 * @return Toolset_Admin_Notice_Dismissible
 	 */
-	protected function layouts_theme_integration_available() {
-		if( defined( 'TOOLSET_INTEGRATION_PLUGIN_THEME_NAME' ) ) {
-			// don't show this message if already a integration plugin is running
-			// return;
-		}
-		$notice = new Toolset_Admin_Notice_Dismissible( 'layouts-theme-integration' );
-		$notice->set_content( $this->tpl_path . '/commercial-plugin-installed/layouts-support-available.phtml' );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Available() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Not_Installed() );
-		Toolset_Admin_Notices_Manager::add_notice( $notice );
-
-		return $notice;
-	}
-
-	/**
-	 * @return Toolset_Admin_Notice_Dismissible
-	 */
-	protected function layouts_theme_integration_not_active() {
-		$notice = new Toolset_Admin_Notice_Dismissible( 'layouts-theme-integration-not-active' );
-		$notice->set_content( $this->tpl_path . '/commercial-plugin-installed/layouts-support-plugin-not-active.phtml' );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Available() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Not_Active() );
-		Toolset_Admin_Notices_Manager::add_notice( $notice );
-
-		return $notice;
-	}
-
-	/**
-	 * @return Toolset_Admin_Notice_Dismissible
-	 */
-	protected function layouts_theme_integration_theme_not_active() {
-		if( defined( 'LAYOUTS_INTEGRATION_THEME_NAME' ) ) {
-			// Layouts define this constant if there is an active integration (plugin and theme installed and active)
-			return false;
-		}
-
-		$notice = new Toolset_Admin_Notice_Dismissible( 'layouts-theme-integration-theme-not-active' );
-		$notice->set_content( $this->tpl_path . '/commercial-plugin-installed/layouts-support-theme-not-active.phtml' );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Active() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Theme_Installed() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Theme_Not_Active() );
-		Toolset_Admin_Notices_Manager::add_notice( $notice );
-
-		return $notice;
-	}
-
-	/**
-	 * @return Toolset_Admin_Notice_Dismissible
-	 */
-	protected function layouts_no_theme_integration_available() {
+	protected function types_views_or_layouts_missing() {
+		// The id 'layouts-no-theme-integration' can be irritating as it no longer depends on a theme integration plugin
+		// But changing the id means users have to dismiss the notice again. So we keep 'layouts-no-theme-integration'.
 		$notice = new Toolset_Admin_Notice_Dismissible( 'layouts-no-theme-integration' );
-		$notice->set_content( $this->tpl_path . '/commercial-plugin-installed/layouts-support-missing.phtml' );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Missing() );
+		$notice->set_content( $this->tpl_path . '/commercial-plugin-installed/types-views-or-layouts-missing.phtml' );
 		Toolset_Admin_Notices_Manager::add_notice( $notice );
 
 		return $notice;

@@ -14,7 +14,7 @@ class WPToolset_Field_Colorpicker extends FieldFactory
 {
     public function init()
     {
-        if ( !is_admin() ) {
+        if ( !Toolset_Utils::is_real_admin() ) {
             wp_enqueue_style( 'wp-color-picker' );
             wp_enqueue_script(
                 'iris',
@@ -73,13 +73,9 @@ class WPToolset_Field_Colorpicker extends FieldFactory
         $validation = $this->addTypeValidation($validation);
         $this->setValidationData($validation);
 
-        $attributes = $this->getAttr();
-        if ( isset($attributes['class'] ) ) {
-            $attributes['class'] .= ' ';
-        } else {
-            $attributes['class'] = '';
-        }
-        $attributes['class'] = 'js-wpt-colorpicker';
+        $attributes = $this->getAttr();    
+        $shortcode_class = array_key_exists( 'class', $attributes ) ? $attributes['class'] : "";
+        $attributes['class'] = "js-wpt-colorpicker {$shortcode_class}"; // What is this js-wpt-cond-trigger classname for?
 
         $form = array();
         $form['name'] = array(

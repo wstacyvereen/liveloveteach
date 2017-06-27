@@ -1,15 +1,11 @@
 <?php
 
-if ( class_exists( 'Toolset_Common_Bootstrap' ) ) {
-    return;
-};
-
 if( !defined('TOOLSET_VERSION') ){
-	define('TOOLSET_VERSION', '2.3');
+	define('TOOLSET_VERSION', '2.4.1');
 }
 
 if ( ! defined('TOOLSET_COMMON_VERSION' ) ) {
-    define( 'TOOLSET_COMMON_VERSION', '2.3' );
+    define( 'TOOLSET_COMMON_VERSION', '2.4.1' );
 }
 
 if ( ! defined('TOOLSET_COMMON_PATH' ) ) {

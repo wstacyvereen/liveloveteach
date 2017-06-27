@@ -851,7 +851,7 @@ function wpcf_pr_admin_wpcf_relationship_update() {
 		&& (int) $_REQUEST['p'] > 0
 	) {
 		update_post_meta( $post_id, sprintf( '_wpcf_belongs_%s_id', $parent_post_type ), (int) $_REQUEST['p'] );
-		$data['edit_link'] = admin_url( 'post.php ');
+		$data['edit_link'] = admin_url( 'post.php' );
 	} else {
 		delete_post_meta( $post_id, sprintf( '_wpcf_belongs_%s_id', $parent_post_type ) );
 	}

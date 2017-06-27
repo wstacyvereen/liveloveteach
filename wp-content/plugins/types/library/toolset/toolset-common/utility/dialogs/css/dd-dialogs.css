@@ -336,9 +336,7 @@
 /* ----- */
 /* TEMP  */
 /* ----- */
-
-/* TODO: I don't know what these styles are for and who has added them */
-.widget-top .widget-title-action {
+.ddl-dialog .widget-top .widget-title-action {
     display: inline-block;
     float: left;
 }
@@ -346,27 +344,20 @@
     text-align: left;
 }
 
-.js .widget .widget-top{
+.ddl-dialog .js .widget .widget-top{
     cursor:pointer;
 }
-
-.widget-top .widget-title {
-    display: inline-block;
-    float: left;
-    border: medium none;
-}
-
 .ddl-dialog .widget{
     margin-bottom: 1px;
     background: none repeat scroll 0 0 transparent;
 }
 
-.selected-widget-action {
+.ddl-dialog .selected-widget-action {
     margin-top: 6px!important;
 }
 
-.widget,
-.widget .widget-top{
+.ddl-dialog .widget,
+.ddl-dialog .widget .widget-top{
     border: none;
     background:none;
 }
@@ -738,24 +729,30 @@ ul.grid {
 .col2:before,
 .col2 .item-header:after,
 .col2 .item-header:before {
-    left: 34%;
+    left: 29%;
 }
 .col3:after,
 .col3:before,
 .col3 .item-header:after,
 .col3 .item-header:before {
-    left: 60%;
+    left: 49%;
 }
 .col4:after,
 .col4:before,
 .col4 .item-header:after,
 .col4 .item-header:before {
-    left: 85%;
+    left: 70%;
+}
+.col5:after,
+.col5:before,
+.col5 .item-header:after,
+.col5 .item-header:before {
+    left: 89%;
 }
 
 
 .grid-category-item {
-    width: 25%;
+    width: 20%;
     float: left;
     position: relative;
     padding-top:2px;

@@ -34,6 +34,11 @@ class Toolset_User_Editors_Editor_Screen_Basic_Backend
 
 		ob_start();
 			include_once( dirname( __FILE__ ) . '/backend.phtml' );
+			// Render HTML template for the Insert/Edit link native WP dialog.
+			if ( ! class_exists( '_WP_Editors' ) ) {
+				require( ABSPATH . WPINC . '/class-wp-editor.php' );
+			}
+			_WP_Editors::wp_link_dialog();
 			$content = ob_get_contents();
 		ob_end_clean();
 
