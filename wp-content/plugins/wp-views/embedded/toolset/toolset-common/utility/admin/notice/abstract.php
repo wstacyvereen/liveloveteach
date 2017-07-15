@@ -59,6 +59,19 @@ abstract class Toolset_Admin_Notice_Abstract implements Toolset_Admin_Notice_Int
 	protected $template_file;
 
 	/**
+	 * Notice is only for administrators
+	 *
+	 * This is an EXCEPTION of condition being placed directly into notice class
+	 * Reason for Exception: We need it for all common notices (no rule without exception) and it's too easy
+	 * missing to add the "Toolset_Condition_User_Role_Admin" condition to every new future notice.
+	 *
+	 * For all other conditions use the ->add_condition() concept.
+	 *
+	 * @var bool
+	 */
+	protected $is_only_for_administrators = true;
+
+	/**
 	 * Toolset_Admin_Notice constructor.
 	 *
 	 * @param string $id
@@ -230,6 +243,11 @@ abstract class Toolset_Admin_Notice_Abstract implements Toolset_Admin_Notice_Int
 	abstract protected function set_default_template_file();
 
 	public function conditions_met() {
+		if( $this->get_is_only_for_administrators() && ! current_user_can( 'manage_options' ) ) {
+			// this notice is only for administrators
+			return false;
+		}
+
 		if( empty( $this->conditions ) ) {
 			// this notice has no conditions
 			return true;
@@ -255,5 +273,21 @@ abstract class Toolset_Admin_Notice_Abstract implements Toolset_Admin_Notice_Int
 		}
 
 		Toolset_Admin_Notices_Manager::dismiss_notice_by_id( $this->get_id(), $this->is_dimissibile_globally() );
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function get_is_only_for_administrators() {
+		return $this->is_only_for_administrators;
+	}
+
+	/**
+	 * @param bool $bool
+	 */
+	public function set_is_only_for_administrators( $bool ) {
+		$this->is_only_for_administrators = $bool === false
+			? false
+			: true;
 	}
 }

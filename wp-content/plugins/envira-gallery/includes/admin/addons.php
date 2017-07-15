@@ -323,9 +323,9 @@ class Envira_Gallery_Addons {
         $type = $this->base->get_license_key_type();
 
         // Get addons data from transient or perform API query if no transient.
-        //if ( false === ( $addons = get_transient( '_eg_addons' ) ) ) {
+        if ( false === ( $addons = get_transient( '_eg_addons' ) ) ) {
             $addons = $this->get_addons_data( $key );
-        //}
+        }
 
         // If no Addons exist, return false
         if ( ! $addons ) {
@@ -339,6 +339,7 @@ class Envira_Gallery_Addons {
             'licensed'  => array(),
             'unlicensed'=> array(),
         );
+        
         foreach ( (array) $addons as $i => $addon ) {
 			
 			//Skip over addons that have been rolled into the core.

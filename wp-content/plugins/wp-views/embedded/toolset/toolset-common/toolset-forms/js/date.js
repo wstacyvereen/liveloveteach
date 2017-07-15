@@ -2,14 +2,20 @@ var wptDate = (function ($) {
     var _tempConditions,
 		_tempField,
 		is_datepicker_style_loaded = false;
-    function init(parent) {
+    function init(parent, options) {
         if ($.isFunction($.fn.datepicker)) {
             $('input.js-wpt-date', $(parent)).each(function (index) {
-                //removed !$(this).is(':disabled') && 
-                //cred-64
-                if (/*!$(this).is(':disabled') &&*/ !$(this).hasClass('hasDatepicker')) {
-                    a = wptDate.add($(this));
-                    //a.next().after('<span style="margin-left:10px"><i>' + wptDateData.dateFormatNote + '</i></span>').data( 'dateFormatNote', true );
+                if (!$(this).hasClass('hasDatepicker')) {
+                    if($(this).attr('id').indexOf('cred_form') != -1){
+                        if(typeof(options) !== 'undefined' && options.hasOwnProperty('source') && options.source == 'cred_form_ready_init'){
+                            wptDate.add($(this));
+                        }
+                    }else{
+                        wptDate.add($(this));
+                    }
+                }else{
+                    //Load the datepicker stylesheet if the field is already initialized
+                    wptDate.maybeLoadDatepickerStyle();
                 }
             });
         }
@@ -93,10 +99,10 @@ var wptDate = (function ($) {
                         el_aux.val(response['timestamp']).trigger('wptDateSelect');
                     }
                     el.val(response['display']);
-                    el_clear.show();
+                    el_clear.css('display', 'inline-block');
                     
                     //Fix adding remove label on date
-                    el.prev('label.wpt-form-error').remove();
+                    el.prev('small.wpt-form-error').remove();
                 });
                 //el.trigger('wptDateSelect');
             },
@@ -178,6 +184,13 @@ var wptDate = (function ($) {
 
 jQuery(document).ready(function () {
     wptDate.init('body');
+});
+
+//Init date fields after CRED form is ready
+jQuery(document).on('cred_form_ready', function(){
+    wptDate.init('body', {
+        source: 'cred_form_ready_init'
+    });
 });
 
 if ('undefined' != typeof (wptCallbacks)) {

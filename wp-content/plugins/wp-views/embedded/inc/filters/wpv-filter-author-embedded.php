@@ -1,22 +1,23 @@
 <?php
 
 /**
-* Author frontend filter
-*
-* @package Views
-*
-* @since 2.1
-*/
+ * Author frontend filter
+ *
+ * @package Views
+ *
+ * @since 2.1.0
+ * @since 2.4.0 Prepare a custom search frontend filter.
+ */
 
 WPV_Author_Frontend_Filter::on_load();
 
 /**
-* WPV_Author_Filter
-*
-* Views Author Filter Frontend Class
-*
-* @since 2.1
-*/
+ * WPV_Author_Filter
+ *
+ * Views Author Filter Frontend Class
+ *
+ * @since 2.1
+ */
 
 class WPV_Author_Frontend_Filter {
 	
@@ -33,6 +34,9 @@ class WPV_Author_Frontend_Filter {
 		// Auxiliar methods for gathering data
 		add_filter( 'wpv_filter_register_shortcode_attributes_for_posts',	array( 'WPV_Author_Frontend_Filter', 'shortcode_attributes' ), 10, 2 );
 		add_filter( 'wpv_filter_register_url_parameters_for_posts',			array( 'WPV_Author_Frontend_Filter', 'url_parameters' ), 10, 2 );
+		// Frontend custom search filter shortcodes
+		add_shortcode( 'wpv-control-post-author',							array( 'WPV_Author_Frontend_Filter', 'wpv_shortcode_wpv_control_post_author' ) );
+		add_filter( 'wpv_filter_wpv_shortcodes_gui_data',					array( 'WPV_Author_Frontend_Filter', 'wpv_shortcodes_register_wpv_control_post_author_data' ) );
     }
 	
 	/**
@@ -478,6 +482,516 @@ class WPV_Author_Frontend_Filter {
 			);
 		}
 		return $attributes;
+	}
+	
+	/**
+	 * Callback to display the custom search filter by post author.
+	 *
+	 * @param $atts array
+	 * 		'url_param'		string	URL parameter to listen to
+	 *		'type'			'select'|'multi-select'|'radios'|'checbboxes'
+	 *		'roles'			string	Comma-separated list of roles to include
+	 *		'include'		string	Comma-separated list of user IDs to include
+	 *		'format'		string.	Placeholders: '%%ID%%', '%%DISPLAY_NAME%%', '%%USER_LOGIN%%', '%%USER_NICENAME%%', '%%USER_EMAIL%%'
+	 *		'default_label'	string	Label for the default empty option in select dropdowns
+	 *		'style'			string	Styles to add to the control
+	 *		'class'			string	Classnames to add to the control
+	 *		'label_style'	string
+	 *		'label_class'	string
+	 *
+	 * @since 2.4.0
+	 *
+	 * @note WIP, extremely tied to select, check with radios and checkboxes.
+	 * @todo Do not use Enlimbo at all, write its own walkers.
+	 */
+
+	public static function wpv_shortcode_wpv_control_post_author( $atts ) {
+
+		global $wp_version;
+		$view_id			= apply_filters( 'wpv_filter_wpv_get_current_view',		null );
+		$view_settings		= apply_filters( 'wpv_filter_wpv_get_object_settings',	array() );
+		$return				= '';
+
+		$atts = shortcode_atts(
+			array(
+				'url_param'		=> '',
+				'type'			=> 'select',
+				'roles'			=> 'any',
+				'include'		=> '',
+				'format'		=> '%%DISPLAY_NAME%%',
+				'default_label'	=> '',
+				'style'			=> '',
+				'class'			=> '',
+				'label_style'	=> '',
+				'label_class'	=> ''
+			),
+			$atts
+		);
+
+		$roles		= explode( ',', $atts['roles'] );
+		$roles		= array_map( 'trim', $roles );
+		$include	= explode( ',', $atts['include'] );
+		$include	= array_map( 'esc_attr', $include );
+		$include	= array_map( 'trim', $include );
+		$include	= array_filter( $include, 'is_numeric' );
+		$include	= array_map( 'intval', $include );
+		$fields		= array( 'ID', 'user_login' );
+		$format_placeholders = array(
+			'display_name'	=> '%%DISPLAY_NAME%%',
+			'user_login'	=> '%%USER_LOGIN%%',
+			'user_nicename'	=> '%%USER_NICENAME%%',
+			'user_email'	=> '%%USER_EMAIL%%'
+		);
+
+		if (
+			empty( $atts['url_param'] )
+			|| ! in_array( $atts['type'], array( 'select', 'multiselect', 'radios', 'checkboxes' ) )
+			|| (
+				empty( $roles )
+				&& empty( $include )
+			)
+		) {
+			return $return;
+		}
+
+		foreach ( $format_placeholders as $format_key => $format_value ) {
+			if ( strpos( $atts['format'], $format_value ) !== false ) {
+				$fields[] = $format_key;
+			} else {
+				unset( $format_placeholders[ $format_key ] );
+			}
+		}
+		
+		$format_placeholders = is_array( $format_placeholders ) ? $format_placeholders : array();
+
+		$user_query_args = array(
+			'fields'	=> $fields
+		);
+
+		if ( ! empty( $include ) ) {
+			$user_query_args['include'] = $include;
+		}
+
+		if (
+			! empty( $roles )
+			&& ! in_array( 'any', $roles )
+		) {
+			if ( version_compare( $wp_version, '4.4', '<' ) ) {
+				$user_query_args['role'] = $roles[0];
+			} else {
+				$user_query_args['role__in'] = $roles;
+			}
+		}
+
+		$user_query			= new WP_User_Query( $user_query_args );
+		$user_query_results	= $user_query->results;
+		
+		$style = esc_attr( $atts['style'] );
+		$class = esc_attr( $atts['class'] );
+		$label_style = esc_attr( $atts['label_style'] );
+		$label_class = esc_attr( $atts['label_class'] );
+		
+		$view_settings = apply_filters( 'wpv_filter_wpv_get_object_settings', array() );
+		$dependant = false;
+		$counters = ( $atts['format'] && strpos( $atts['format'], '%%COUNT%%' ) !== false ) ? true : false;
+		
+		$wpv_data_cache = WPV_Cache::$stored_cache;
+		
+		if (
+			isset( $_GET[ $atts['url_param'] ] )
+			&& ! empty( $_GET[ $atts['url_param'] ] )
+		) {
+			$query = apply_filters( 'wpv_filter_wpv_get_dependant_extended_query_args', array(), $view_settings, array( 'author' => 'enabled' ) );
+			$aux_cache_query = null;
+			$query_args_to_check = array(
+				'author', 'author_name', 'author__in', 'author__not_in'
+			);
+			foreach ( $query_args_to_check as $arg_to_check ) {
+				if ( isset( $query[ $arg_to_check ] ) ) {
+					unset( $query[ $arg_to_check ] );
+				}
+			}
+			$aux_cache_query = new WP_Query( $query );
+			if ( 
+				is_array( $aux_cache_query->posts ) 
+				&& ! empty( $aux_cache_query->posts ) 
+			) {
+				$aux_query_count = count( $aux_cache_query->posts );
+				$wpv_data_cache = WPV_Cache::generate_cache( $aux_cache_query->posts, array( 'author' => 'enabled' ) );
+			}
+		}
+		
+		if ( isset( $view_settings['dps'] )
+			&& is_array( $view_settings['dps'] )
+			&& isset( $view_settings['dps']['enable_dependency'] )
+			&& $view_settings['dps']['enable_dependency'] == 'enable' )
+		{
+			$dependant = true;
+			$force_disable_dependant = apply_filters( 'wpv_filter_wpv_get_force_disable_dps', false );
+			if ( $force_disable_dependant ) {
+				$dependant = false;
+			}
+		}
+		
+		$empty_action = array();
+		if (
+			$dependant 
+			|| $counters 
+		) {
+			$empty_default = 'hide';
+			$empty_alt = 'disable';
+			$empty_options = array( 'select', 'radios', 'checkboxes' ); // multi-select is a special case because of dashes and underscores
+			foreach ( $empty_options as $empty_opt ) {
+				if ( 
+					isset( $view_settings['dps']['empty_' . $empty_opt] ) 
+					&& $view_settings['dps']['empty_' . $empty_opt] == $empty_alt 
+				) {
+					$empty_action[$empty_opt] = $empty_alt;
+				} else {
+					$empty_action[$empty_opt] = $empty_default;
+				}
+			}
+			if ( 
+				isset( $view_settings['dps']['empty_multi_select'] ) 
+				&& $view_settings['dps']['empty_multi_select'] == $empty_alt 
+			) {
+				$empty_action['multi-select'] = $empty_alt;
+			} else {
+				$empty_action['multi-select'] = $empty_default;
+			}
+		}
+		
+		$control_data	= array();
+		$options_array	= array();
+		$default_value	= isset( $_GET[ $atts['url_param'] ] ) ? sanitize_text_field( $_GET[ $atts['url_param'] ] ) : '';
+		$user_value_use	= 'ID';
+		if (
+			isset( $view_settings['author_url_type'] ) 
+			&& 'username' ==  $view_settings['author_url_type'] 
+		) {
+			$user_value_use = 'user_login';
+		}
+		
+		switch ( $atts['type'] ) {
+			case 'select':
+			case 'multiselect':
+				
+				$control_data = array(
+					'#type'				=> esc_attr( $atts['type'] ),
+					'#id'				=> 'wpv_control_post_author_' . esc_attr( $atts['type'] ) . '_' . esc_attr( $atts['url_param'] ),
+					'#name'				=> esc_attr( $atts['url_param'] ),
+					'#attributes'		=> array(
+												'style'	=> $style,
+												'class'	=> 'js-wpv-filter-trigger ' . $class 
+											),
+					'#inline'			=> true,
+					'#default_value'	=> $default_value,
+				);
+				
+				if ( $atts['type'] == 'multiselect' ) {
+					$control_data['#multiple']	= true;
+					$control_data['#type']		= 'select';
+				}
+				
+				$options_array[ $atts['default_label'] ] = array(
+					'#title' => $atts['default_label'],
+					'#value' => '',
+					'#inline' => true,
+					'#after' => '<br />' 
+				);
+				
+				
+				foreach ( $user_query_results as $user_option ) {
+			
+					$display_value = esc_attr( $atts['format'] );
+					$display_value = str_replace( '%%ID%%', $user_option->ID, $display_value );
+					
+					$user_option_value = $user_option->ID;
+					if ( 'user_login' == $user_value_use ) {
+						$user_option_value = $user_option->user_login;
+					}
+					
+					if ( isset( $format_placeholders['display_name'] ) ) {
+						$display_value = str_replace( '%%DISPLAY_NAME%%', $user_option->display_name, $display_value );
+					}
+					if ( isset( $format_placeholders['user_login'] ) ) {
+						$display_value = str_replace( '%%USER_LOGIN%%', $user_option->user_login, $display_value );
+					}
+					if ( isset( $format_placeholders['user_nicename'] ) ) {
+						$display_value = str_replace( '%%USER_NICENAME%%', $user_option->user_nicename, $display_value );
+					}
+					if ( isset( $format_placeholders['USER_EMAIL'] ) ) {
+						$display_value = str_replace( '%%USER_EMAIL%%', $user_option->USER_EMAIL, $display_value );
+					}
+					
+					$user_option_show = true;
+					
+					if ( 
+						$dependant 
+						|| $counters 
+					) {
+						$count_user_option_posts = WPV_Author_Frontend_Filter::count_cached_posts( $user_option->ID, $wpv_data_cache, $counters );
+						if ( 
+							$dependant 
+							&& $count_user_option_posts == 0 
+						) {
+							$user_option_show = false;
+						}
+						if ( $counters ) {
+							$display_value = str_replace( '%%COUNT%%', $count_user_option_posts, $display_value );
+						}
+					}
+					
+					if (
+						$user_option_show 
+						|| $user_option_value == $default_value
+					) {
+					
+						$options_array[ $display_value ] = array(
+							'#title' => $display_value,
+							'#value' => $user_option_value,
+							'#inline' => true,
+							'#after' => '<br />' 
+						);
+					
+					}
+				}
+				
+				$control_data['#options'] = $options_array;
+				
+				$return = wpv_form_control( array( 'field' => $control_data ) );
+				
+				break;
+			
+			case 'radios':
+				
+				$control_data = array(
+					'#type'				=> esc_attr( $atts['type'] ),
+					'#id'				=> 'wpv_control_post_author_' . esc_attr( $atts['type'] ) . '_' . esc_attr( $atts['url_param'] ),
+					'#name'				=> esc_attr( $atts['url_param'] ),
+					'#attributes'		=> array(
+												'style'	=> $style,
+												'class'	=> 'js-wpv-filter-trigger ' . $class 
+											),
+					'#inline'			=> true,
+					'#default_value'	=> $default_value,
+				);
+				
+				if ( '' != $atts['default_label'] ) {
+					$options_array[ $atts['default_label'] ] = array(
+						'#title'		=> $atts['default_label'],
+						'#value'		=> '',
+						'#attributes'	=> array(
+											'style'	=> $style,
+											'class'	=> 'js-wpv-filter-trigger ' . $class 
+										),
+						'#labelclass'	=> $label_class,
+						'#labelstyle'	=> $label_style,
+						'#inline'		=> true,
+						'#after'		=> '<br />' 
+					);
+				}
+				
+				foreach ( $user_query_results as $user_option ) {
+			
+					$display_value = esc_attr( $atts['format'] );
+					$display_value = str_replace( '%%ID%%', $user_option->ID, $display_value );
+					
+					$user_option_value = $user_option->ID;
+					if ( 'user_login' == $user_value_use ) {
+						$user_option_value = $user_option->user_login;
+					}
+					
+					if ( isset( $format_placeholders['display_name'] ) ) {
+						$display_value = str_replace( '%%DISPLAY_NAME%%', $user_option->display_name, $display_value );
+					}
+					if ( isset( $format_placeholders['user_login'] ) ) {
+						$display_value = str_replace( '%%USER_LOGIN%%', $user_option->user_login, $display_value );
+					}
+					if ( isset( $format_placeholders['user_nicename'] ) ) {
+						$display_value = str_replace( '%%USER_NICENAME%%', $user_option->user_nicename, $display_value );
+					}
+					if ( isset( $format_placeholders['USER_EMAIL'] ) ) {
+						$display_value = str_replace( '%%USER_EMAIL%%', $user_option->USER_EMAIL, $display_value );
+					}
+					
+					$user_option_show = true;
+					
+					if ( 
+						$dependant 
+						|| $counters 
+					) {
+						$count_user_option_posts = WPV_Author_Frontend_Filter::count_cached_posts( $user_option->ID, $wpv_data_cache, $counters );
+						if ( 
+							$dependant 
+							&& $count_user_option_posts == 0 
+						) {
+							$user_option_show = false;
+						}
+						if ( $counters ) {
+							$display_value = str_replace( '%%COUNT%%', $count_user_option_posts, $display_value );
+						}
+					}
+					
+					if (
+						$user_option_show 
+						|| $user_option_value == $default_value
+					) {
+					
+						$options_array[ $display_value ] = array(
+							'#title' => $display_value,
+							'#value' => $user_option_value,
+							'#attributes'	=> array(
+												'style'	=> $style,
+												'class'	=> 'js-wpv-filter-trigger ' . $class 
+											),
+							'#labelclass'	=> $label_class,
+							'#labelstyle'	=> $label_style,
+							'#inline' => true,
+							'#after' => '<br />' 
+						);
+					
+					}
+				}
+				
+				$control_data['#options'] = $options_array;
+				
+				$return = wpv_form_control( array( 'field' => $control_data ) );
+				
+				break;
+		}
+
+		return $return;
+
+	}
+	
+	/**
+	 * Register the wpv-control-post-author shortcode attributes in the shortcodes GUI API.
+	 *
+	 * @since 2.4.0
+	 */
+	
+	public static function wpv_shortcodes_register_wpv_control_post_author_data( $views_shortcodes ) {
+		$views_shortcodes['wpv-control-post-author'] = array(
+			'callback' => array( 'WPV_Author_Frontend_Filter', 'wpv_shortcodes_get_wpv_control_post_author_data' )
+		);
+		return $views_shortcodes;
+	}
+	
+	public static function wpv_shortcodes_get_wpv_control_post_author_data() {
+		$data = array(
+			'name' => __( 'Filter by post author', 'wpv-views' ),
+			'label' => __( 'Filter by post author', 'wpv-views' ),
+			'attributes' => array(
+				'display-options' => array(
+					'label' => __( 'Display', 'wpv-views' ),
+					'header' => __( 'Display', 'wpv-views' ),
+					'fields' => array(
+						'type' => array(
+							'label'			=> __( 'Type of control', 'wpv-views'),
+							'type'			=> 'select',
+							'options'		=> array(
+												'select'		=> __( 'Select dropdown', 'wpv-views' ),
+												'multiselect'	=> __( 'Multiselect', 'wpv-views' ),
+												'radios'		=> __( 'Set of radio buttons', 'wpv-views' ),
+												'checkboxes'	=> __( 'Set of checkboxes', 'wpv-views' )
+											),
+							'description' 	=> __( 'Type of control to display.', 'wpv-views' ),
+							'default_force' => 'select'
+						),
+						'default_label' => array(
+							'label'			=> __( 'Label of the first empty option', 'wpv-views' ),
+							'type'			=> 'text',
+							'placeholder'	=> __( 'Select one...', 'wpv-views' ),
+							'description'	=> __( 'Label for the first options, which returns all posts.', 'wpv-views' )
+						),
+						'url_param' => array(
+							'label'			=> __( 'URL parameter to use', 'wpv-views'),
+							'type'			=> 'text',
+							'default_force'	=> 'wpv-author-filter',
+							'description'	=> __( 'Watch this URL parameter.', 'wpv-views' ),
+							'required'		=> true
+						),
+						'format' => array(
+							'label'			=> __( 'Format', 'wpv-views'),
+							'type'			=> 'text',
+							'default_force'	=> '%%DISPLAY_NAME%%',
+							'description'	=> __( 'Render options using this format. You can use the placeholders %%ID%%, %%DISPLAY_NAME%%, %%USER_LOGIN%%, %%USER_NICENAME%%, %%USER_EMAIL%% and %%COUNT%%', 'wpv-views' ),
+							'required'		=> true
+						),
+					),
+				),
+				'filter-options' => array(
+					'label' => __( 'Restrictions', 'wpv-views' ),
+					'header' => __( 'Restrictions', 'wpv-views' ),
+					'fields' => array(
+						'roles' => array(
+							'label'			=> __( 'Include only users with those roles', 'wpv-views'),
+							'type'			=> 'text',
+							'default'		=> '',
+							'description'	=> __( 'Comma separated list of roles.', 'wpv-views' ),
+						),
+						'include' => array(
+							'label'			=> __( 'Include only users with those IDs', 'wpv-views'),
+							'type'			=> 'text',
+							'default'		=> '',
+							'description'	=> __( 'Comma separated list of IDs.', 'wpv-views' ),
+						),
+					)
+				),
+				'style-options' => array(
+					'label' => __( 'Styling', 'wpv-views' ),
+					'header' => __( 'Styling', 'wpv-views' ),
+					'fields' => array(
+						'style' => array(
+							'label'			=> __( 'Add this CSS style to the control', 'wpv-views'),
+							'type'			=> 'text',
+							'default'		=> '',
+							'description'	=> __( 'Styling.', 'wpv-views' ),
+						),
+						'class' => array(
+							'label'			=> __( 'Add this classname to the control', 'wpv-views'),
+							'type'			=> 'text',
+							'default'		=> '',
+							'description'	=> __( 'Classing.', 'wpv-views' ),
+						),
+						'label_style' => array(
+							'label'			=> __( 'Add this CSS to the radios labels of the control', 'wpv-views'),
+							'type'			=> 'text',
+							'default'		=> '',
+							'description'	=> __( 'Styling label.', 'wpv-views' ),
+						),
+						'label_class' => array(
+							'label'			=> __( 'Add this classname to the radios labels', 'wpv-views'),
+							'type'			=> 'text',
+							'default'		=> '',
+							'description'	=> __( 'Classing labels.', 'wpv-views' ),
+						),
+					)
+				),
+			),
+		);
+		return $data;
+	}
+	
+	/**
+	 * Count cached posts that belong to a given author.
+	 *
+	 * @since 2.4.0
+	 */
+	
+	static function count_cached_posts( $author_id, $cached_data, $count_matches ) {
+		$return = ( $count_matches ) ? 0 : false;
+		
+		if ( isset( $cached_data['post_author'][ $author_id ] ) ) {
+			if ( $count_matches ) {
+				$return = count( $cached_data['post_author'][ $author_id ] );
+			} else {
+				$return = true;
+			}
+		}
+		
+		return $return;
 	}
 	
 }

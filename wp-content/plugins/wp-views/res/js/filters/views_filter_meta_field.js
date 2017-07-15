@@ -585,14 +585,15 @@ WPViews.MetaFieldFilterGUI = function( $, meta ) {
 			},
 			buttons:[
 				{
-					class: 'button-secondary',
-					text: wpv_meta_field_filter_texts[ self.meta ].cancel,
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-filters-meta-fields-delete-filter-row',
+					text: wpv_meta_field_filter_texts[ self.meta ].delete_filters,
 					click: function() {
+						self.remove_meta_field_filters();
 						$( this ).dialog( "close" );
 					}
 				},
 				{
-					class: 'button-secondary',
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary',
 					text: wpv_meta_field_filter_texts[ self.meta ].edit_filters,
 					click: function() {
 						$( this ).dialog( "close" );
@@ -600,10 +601,9 @@ WPViews.MetaFieldFilterGUI = function( $, meta ) {
 					}
 				},
 				{
-					class: 'button-primary js-wpv-filters-meta-fields-delete-filter-row',
-					text: wpv_meta_field_filter_texts[ self.meta ].delete_filters,
+					class: 'button-secondary',
+					text: wpv_meta_field_filter_texts[ self.meta ].cancel,
 					click: function() {
-						self.remove_meta_field_filters();
 						$( this ).dialog( "close" );
 					}
 				}

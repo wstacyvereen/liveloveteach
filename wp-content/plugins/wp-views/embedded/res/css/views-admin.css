@@ -2608,6 +2608,11 @@ html[dir='rtl'] .wpv-itembox-header .wpv-code-editor-toggler {
 	z-index: 998;
 }
 
+.toolset_page_views-editor .toolset_select2-container.toolset_select2-container-in-setting, 
+.toolset_page_view-archives-editor .toolset_select2-container.toolset_select2-container-in-setting {
+	z-index: 99;
+}
+
 .toolset_page_views-editor .toolset_select2-container--open.toolset_select2-dropdown-in-setting, 
 .toolset_page_view-archives-editor .toolset_select2-container--open.toolset_select2-dropdown-in-setting {
 	z-index: 99;

@@ -1,4 +1,5 @@
 <?php
+
 require_once 'class.textfield.php';
 
 /**
@@ -6,11 +7,11 @@ require_once 'class.textfield.php';
  *
  * @author Franko
  */
-class WPToolset_Field_Button extends WPToolset_Field_Textfield
-{
+class WPToolset_Field_Button extends WPToolset_Field_Textfield {
 
     public function metaform() {
         $config = $this->_config;
+
         $metaform = array();
         $metaform[] = array(
             '#type' => 'button',
@@ -18,8 +19,10 @@ class WPToolset_Field_Button extends WPToolset_Field_Textfield
             '#description' => $this->description,
             '#name' => $this->name,
             '#value' => $this->value,
-            '#validate' => $config['validation']
+            '#validate' => $config['validation'],            
+            '#attributes' => $this->getAttr(),           
         );
         return $metaform;
     }
+
 }

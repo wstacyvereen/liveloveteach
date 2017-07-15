@@ -303,9 +303,9 @@ class Envira_Gallery_Import {
             } else {
                 // Check if the $item has title, caption, alt specified
                 // If so, store those values against the attachment so they're included in the Gallery
-                // If not, fallback to the defaults
+                // If not, fallback to the defaults               
                 $attachment = array(
-                    'post_title'     => ( ( isset( $item['title'] ) && !empty( $item['title'] ) ) ? $item['title'] : $filename ), // Title
+                    'post_title'     => ( ( isset( $item['title'] ) && !empty( $item['title'] ) ) ? $item['title'] : urldecode( $filename ) ), // Title
                     'post_mime_type' => $type,
                     'post_excerpt'   => ( ( isset( $item['caption'] ) && !empty( $item['caption'] ) ) ? $item['caption'] : '' ), // Caption
                 );

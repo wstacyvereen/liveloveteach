@@ -54,6 +54,7 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 			$( self.post_row  ).find('.unsaved').remove();
 			$( document ).trigger( 'js_event_wpv_set_confirmation_unload_check' );
 		}
+		return self;
 	};
 	
 	self.manage_taxonomy_mode = function( select ) {
@@ -128,6 +129,8 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 						}, 400, function() {
 							$( this ).remove();
 							self.post_current_options = $( self.post_options_container_selector + ' input, ' + self.post_options_container_selector + ' select' ).serialize();
+							// We deleted the whole multiple filter, so we can clear the save queue
+							self.clear_save_queue();
 							$( document ).trigger( 'js_event_wpv_query_filter_deleted', [ 'taxonomy' ] );
 							Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-manage-parametric-search-hints', response.data.parametric );
 						});
@@ -156,6 +159,7 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 		} else {
 			$( '.js-wpv-filter-taxonomy-relationship' ).hide();
 		}
+		return self;
 	};
 	
 	//--------------------
@@ -283,6 +287,7 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 							.addClass( 'wpv-filter-multiple-element-removed' )
 							.fadeOut( 500, function() {
 								$( this ).remove();
+								// We deleted just one filter instance, so we can not clear the save queue
 								$( document ).trigger( 'js_event_wpv_query_filter_deleted', [ 'taxonomy' ] );
 							});
 						Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-manage-parametric-search-hints', response.data.parametric );
@@ -321,35 +326,65 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 	});
 	
 	$( document ).on( 'js_event_wpv_query_filter_created', function( event, filter_type ) {
-		if ( filter_type == 'taxonomy' || filter_type == 'post_category' || filter_type.substr(0, 9) == 'tax_input' || filter_type == 'all' ) {
+		if ( 
+			filter_type == 'taxonomy' 
+			|| filter_type == 'post_category' 
+			|| filter_type.substr( 0, 9 ) == 'tax_input' 
+			|| filter_type == 'all' 
+		) {
 			self.manage_filter_changes();
 			self.manage_taxonomy_relationship();
 			Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-manage-save-queue', { section: 'save_filter_post_taxonomy', action: 'add' } );
 		}
+		// This is getting deprecated :-D
+		/*
 		if ( filter_type == 'parametric-all' ) {
 			self.post_current_options = $( self.post_options_container_selector + ' input, ' + self.post_options_container_selector + ' select' ).serialize();
 			self.manage_filter_changes();
 			self.manage_taxonomy_relationship();
 		}
-		WPViews.query_filters.filters_exist();
+		*/
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-check-query-filter-list-existence' );
 	});
 	
 	$( document ).on( 'js_event_wpv_query_filter_saved', function( event, filter_type ) {
-		if ( filter_type == 'taxonomy' || filter_type == 'post_category' || filter_type.substr(0, 9) == 'tax_input' || filter_type == 'all' ) {
+		if ( 
+			filter_type == 'taxonomy' 
+			|| filter_type == 'post_category' 
+			|| filter_type.substr( 0, 9 ) == 'tax_input' 
+			|| filter_type == 'all' 
+		) {
 			self.post_current_options = $( self.post_options_container_selector + ' input, ' + self.post_options_container_selector + ' select' ).serialize();
 			self.manage_filter_changes();
 			self.manage_taxonomy_relationship();
 		}
-		WPViews.query_filters.filters_exist();
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-check-query-filter-list-existence' );
 	});
 	
 	$( document ).on( 'js_event_wpv_query_filter_deleted', function( event, filter_type ) {
-		if ( filter_type == 'taxonomy' || filter_type == 'post_category' || filter_type.substr(0, 9) == 'tax_input' || filter_type == 'all' ) {
-			self.manage_filter_changes();
-			self.manage_taxonomy_relationship();
+		if ( 
+			filter_type == 'taxonomy' 
+			|| filter_type == 'post_category' 
+			|| filter_type.substr( 0, 9 ) == 'tax_input' 
+			|| filter_type == 'all' 
+		) {
+			// As this is a multiple-instances filter, we do need to perform extra actions.
+			// Note that we can not clear the save queue since the query filter, as a whole, has changed.
+			self.manage_filter_changes()
+				.manage_taxonomy_relationship();
 		}
-		WPViews.query_filters.filters_exist();
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-check-query-filter-list-existence' );
 	});
+	
+	/**
+	 * Clear the save queue from traces of this filter.
+	 *
+	 * @since 2.4.0
+	 */
+	self.clear_save_queue = function() {
+		self.post_current_options = $( self.post_options_container_selector + ' input, ' + self.post_options_container_selector + ' select' ).serialize();
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-manage-save-queue', { section: 'save_filter_post_taxonomy', action: 'remove' } );
+	}
 	
 	/**
 	* init_dialogs
@@ -377,14 +412,15 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 			},
 			buttons:[
 				{
-					class: 'button-secondary',
-					text: wpv_category_filter_texts.cancel,
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-filters-taxonomy-delete-filter-row',
+					text: wpv_category_filter_texts.delete_filters,
 					click: function() {
+						self.remove_taxonomy_filters();
 						$( this ).dialog( "close" );
 					}
 				},
 				{
-					class: 'button-secondary',
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary',
 					text: wpv_category_filter_texts.edit_filters,
 					click: function() {
 						$( this ).dialog( "close" );
@@ -392,10 +428,9 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 					}
 				},
 				{
-					class: 'button-primary js-wpv-filters-taxonomy-delete-filter-row',
-					text: wpv_category_filter_texts.delete_filters,
+					class: 'button-secondary',
+					text: wpv_category_filter_texts.cancel,
 					click: function() {
-						self.remove_taxonomy_filters();
 						$( this ).dialog( "close" );
 					}
 				}
@@ -471,6 +506,8 @@ WPViews.TaxonomyFilterGUI = function( $ ) {
 			callback:	self.save_filter_post_taxonomy,
 			event:		'js_event_wpv_save_filter_post_taxonomy_completed'
 		});
+		// Register a callback to remove the filter form the save queue on demand
+		Toolset.hooks.addAction( 'wpv-action-wpv-edit-screen-clear-query-filter-save-queue', self.clear_save_queue );
 	};
 	
 	//--------------------

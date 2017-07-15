@@ -580,6 +580,26 @@ wp.media.controller.EnviraGalleryController = wp.media.controller.State.extend( 
 				// Set the image grid to the HTML we received
                 jQuery( 'ul#envira-gallery-output' ).html( response );
 
+                var list =  jQuery( 'ul#envira-gallery-output li').length;
+
+                console.log( 'list' );
+                console.log( list );
+
+				// If there are slides
+				if ( list !== 0 ){
+					//Fade out Settings header
+					jQuery('#envira-empty-gallery').fadeOut().addClass('envira-hidden');
+
+					//Add Empty Slider Content
+					jQuery('.envira-content-images').removeClass('envira-hidden').fadeIn();
+				}
+
+				// Update count
+				jQuery( 'span.envira-count' ).html ( list );
+
+                console.log( 'response' );
+                console.log( response );
+
                 // Tell wp.media we've finished
 				this.trigger( 'loaded' );
 
@@ -679,8 +699,8 @@ wp.media.view.MediaFrame.Post = EnviraGalleryPostFrame.extend({
 
 } );
 
-/**
-* Useful to output all events that are triggered by wp.media
+
+/*
 var originalTrigger = wp.media.view.MediaFrame.Post.prototype.trigger; 
 wp.media.view.MediaFrame.Post.prototype.trigger = function(){ 
 	console.log('Event Triggered:', arguments); 

@@ -1,5 +1,8 @@
 # Toolset Common Library
 
+## 2.4.2
+- Removed notices, which leads to documentation of integration between Layouts and 3rd party themes
+
 ## 2.4.1
 - Removed notices, to push users to activate Layouts theme integration plugins based on the current theme
 - Added filter to remove/add automatic notices on demand

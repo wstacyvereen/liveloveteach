@@ -5,7 +5,7 @@
  * Description: Envira Gallery is best responsive WordPress gallery plugin.
  * Author:      Envira Gallery Team
  * Author URI:  http://enviragallery.com
- * Version:     1.6.1.1
+ * Version:     1.6.1.2
  * Text Domain: envira-gallery
  * Domain Path: languages
  *
@@ -57,7 +57,7 @@ class Envira_Gallery {
 	 *
 	 * @var string
 	 */
-	public $version = '1.6.1.1';
+	public $version = '1.6.1.2';
 
 	/**
 	 * The name of the plugin.
@@ -1205,4 +1205,46 @@ if ( ! function_exists( 'array_replace' ) ) {
 		return $arrays[0];
 	}
 
+}
+
+/**
+ * This is a deprecated function since standalone is built into core now. 
+ * This prevents errors for users with old album addons but updated core.
+ * This should be removed at some point.
+ *
+ * @since 1.0.1
+ *
+ * @param string $type Type (gallery|albums)
+ * @return string $slug Slug.
+ */
+if ( class_exists('Envira_Albums') && ! function_exists('envira_standalone_get_slug') ) {
+	function envira_standalone_get_slug( $type ) {
+
+		// Get slug
+		switch ($type) {
+			case 'gallery':
+				$slug = get_option( 'envira-gallery-slug');
+				if ( !$slug OR empty( $slug ) ) {
+					// Fallback to check for previous version option name.
+					$slug = get_option( 'envira_standalone_slug' );
+					if ( ! $slug || empty( $slug ) ) {
+						$slug = 'envira';
+					}
+				}
+				break;
+
+			case 'albums':
+				$slug = get_option( 'envira-albums-slug');
+				if ( !$slug OR empty( $slug ) ) {
+					$slug = 'envira_album';
+				}
+				break;
+
+			default:
+				$slug = 'envira'; // Fallback
+				break;
+		}
+
+		return $slug;
+	}
 }

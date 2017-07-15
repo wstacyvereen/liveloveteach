@@ -29,7 +29,6 @@ class WP_Views_plugin extends WP_Views {
 
         if ( is_admin() ) {
 			add_action( 'admin_enqueue_scripts', array( $this,'wpv_admin_enqueue_scripts' ) );
-			$this->view_parametric_create();
 		}
         
         /**
@@ -118,34 +117,6 @@ class WP_Views_plugin extends WP_Views {
             );
         }
         return $items;
-    }
-
-	/**
-     * view_parametric_create function.
-     *
-     * @access public
-     * @return void
-     */
-    function view_parametric_create() {
-
-		$this->add_parametric = new Editor_addon_parametric (
-            'parametric_filter_create',
-			__('New filter', 'wpv-views'),
-			WPV_URL . '/res/js/redesign/views_parametric.js',
-			false,
-            false,
-            'icon-filter-mod'
-        );
-
-	    $this->edit_parametric = new Editor_addon_parametric (
-            'parametric_filter_edit',
-	    	__('Edit filter', 'wpv-views'),
-	    	WPV_URL . '/res/js/redesign/views_parametric.js',
-	    	false,
-            false,
-            'icon-edit fa fa-pencil-square-o'
-        );
-
     }
 
     /**
@@ -1051,7 +1022,6 @@ class WP_Views_plugin extends WP_Views {
 														),
 			'frontend_events_dialog_title' 				=> __( 'Insert Views frontend event handler', 'wpv-views'),
 			'add_event_trigger_callback_dialog_insert'	=> __( 'Insert event trigger callback', 'wpv-views' ),
-			'dialog_close'								=> __( 'Close', 'wpv-views'),
 			'codemirror_autoresize'						=> apply_filters( 'wpv_filter_wpv_codemirror_autoresize', false ),
 			'sections_saved'							=> __( 'All sections have been saved', 'wpv-views' ),
             'some_section_unsaved'						=> __( 'One or more sections haven\'t been saved.', 'wpv-views' ),
@@ -1078,35 +1048,35 @@ class WP_Views_plugin extends WP_Views {
 
 		$filters_strings = array(
 			'add_filter_dialog'				=> array(
-												'title'			=> __( 'Add a query filter to this View','wpv-views' ),
-												'cancel'		=> __( 'Cancel', 'wpv-views' ),
-												'insert'		=> __( 'Add query filter', 'wpv-views' ),
-												'select_empty'	=> __( "Please select an option", 'wpv-views' ),
-												'loading'		=> __( 'Loading...', 'wpv-views' ),
-											),
+				'title'			=> __( 'Add a query filter to this View','wpv-views' ),
+				'cancel'		=> __( 'Cancel', 'wpv-views' ),
+				'insert'		=> __( 'Add query filter', 'wpv-views' ),
+				'select_empty'	=> __( "Please select an option", 'wpv-views' ),
+				'loading'		=> __( 'Loading...', 'wpv-views' ),
+			),
 			'validation'					=> array(
-												'param_missing'					=> __( "This field can not be empty", 'wpv-views' ),
-												'param_forbidden_wordpress'		=> __( "This is a word reserved by WordPress", 'wpv-views' ),
-												'param_forbidden_toolset'		=> __( "This is a word reserved by any of the Toolset plugins", 'wpv-views' ),
-												'param_forbidden_toolset_attr'	=> __( "This is an attribute reserved by any of the Toolset plugins", 'wpv-views' ),
-												'param_forbidden_post_type'		=> __( "There is a post type named like that", 'wpv-views' ),
-												'param_forbidden_taxonomy'		=> __( "There is a taxonomy named like that", 'wpv-views' ),
-												'param_ilegal'					=> array(
-																					'url'				=> __( "Only lowercase letters, numbers, hyphens and underscores allowed as URL parameters", 'wpv-views' ),
-																					'shortcode'			=> __( "Only lowercase letters and numbers allowed as shortcode attributes", 'wpv-views' ),
-																					'year'				=> __( 'Years can only be a four digits number', 'wpv-views' ),
-																					'month'				=> __( 'Months can only be a number between 1 and 12', 'wpv-views' ),
-																					'week'				=> __( 'Weeks can only be numbers between 1 and 53', 'wpv-views' ),
-																					'day'				=> __( 'Days can only be a number between 1 and 31', 'wpv-views' ),
-																					'hour'				=> __( 'Hours can only be numbers between 0 and 23', 'wpv-views' ),
-																					'minute'			=> __( 'Minutes can only be numbers between 0 and 59', 'wpv-views' ),
-																					'second'			=> __( 'Seconds can only be numbers between 0 and 59', 'wpv-views' ),
-																					'dayofyear'			=> __( 'Days of the year can only be numbers between 1 and 366', 'wpv-views' ),
-																					'dayofweek'			=> __( 'Days of the week can only be numbers between 1 and 7', 'wpv-views' ),
-																					'numeric_natural'	=> __( 'This needs to be a non-negative number', 'wpv-views' ),
-																				
-																				),
-											),
+				'param_missing'					=> __( "This field can not be empty", 'wpv-views' ),
+				'param_forbidden_wordpress'		=> __( "This is a word reserved by WordPress", 'wpv-views' ),
+				'param_forbidden_toolset'		=> __( "This is a word reserved by any of the Toolset plugins", 'wpv-views' ),
+				'param_forbidden_toolset_attr'	=> __( "This is an attribute reserved by any of the Toolset plugins", 'wpv-views' ),
+				'param_forbidden_post_type'		=> __( "There is a post type named like that", 'wpv-views' ),
+				'param_forbidden_taxonomy'		=> __( "There is a taxonomy named like that", 'wpv-views' ),
+				'param_ilegal'					=> array(
+					'url'				=> __( "Only lowercase letters, numbers, hyphens and underscores allowed as URL parameters", 'wpv-views' ),
+					'shortcode'			=> __( "Only lowercase letters and numbers allowed as shortcode attributes", 'wpv-views' ),
+					'year'				=> __( 'Years can only be a four digits number', 'wpv-views' ),
+					'month'				=> __( 'Months can only be a number between 1 and 12', 'wpv-views' ),
+					'week'				=> __( 'Weeks can only be numbers between 1 and 53', 'wpv-views' ),
+					'day'				=> __( 'Days can only be a number between 1 and 31', 'wpv-views' ),
+					'hour'				=> __( 'Hours can only be numbers between 0 and 23', 'wpv-views' ),
+					'minute'			=> __( 'Minutes can only be numbers between 0 and 59', 'wpv-views' ),
+					'second'			=> __( 'Seconds can only be numbers between 0 and 59', 'wpv-views' ),
+					'dayofyear'			=> __( 'Days of the year can only be numbers between 1 and 366', 'wpv-views' ),
+					'dayofweek'			=> __( 'Days of the week can only be numbers between 1 and 7', 'wpv-views' ),
+					'numeric_natural'	=> __( 'This needs to be a non-negative number', 'wpv-views' ),
+				
+				),
+			),
 			'warning'						=> array(
 												
 											),
@@ -1124,6 +1094,87 @@ class WP_Views_plugin extends WP_Views {
 			false 
 		);
 		wp_localize_script( 'views-filters-js', 'wpv_filters_strings', $filters_strings );
+		
+		wp_register_script( 
+			'wpv-parametric-admin-script' ,
+			WPV_URL . '/res/js/redesign/views_parametric.js',
+			array( 'jquery', 'jquery-ui-dialog', 'toolset-utils', 'toolset-event-manager', 'underscore', 'icl_editor-script', 'views-codemirror-conf-script', 'views-shortcodes-gui-script' ),
+			WPV_VERSION 
+		);
+		$form_filters_shortcodes_data = apply_filters( 'wpv_filter_wpv_get_form_filters_shortcodes', array() );
+		$form_filters_shortcodes = array_keys( $form_filters_shortcodes_data );
+		wp_localize_script(
+			'wpv-parametric-admin-script',
+			'wpv_parametric_i18n',
+			array(
+				'ajaxurl' => wpv_get_views_ajaxurl(),
+				'nonce' => wp_create_nonce( 'wpv_parametric_general_nonce' ),
+				'form_filters_shortcodes' => $form_filters_shortcodes,
+				'generic'	=> array(
+					'select_one'	=> __( 'Select one', 'wpv-views' )
+				),
+				'dialogs'	=> array(
+					'loading'	=> __( 'Loading', 'wpv-views' ),
+					'close'		=> __( 'Close', 'wpv-views' ),
+					'cancel'	=> __( 'Cancel', 'wpv-views' ),
+					'dialog_select'	=> array(
+						'title'	=> __( 'Insert a custom search filter', 'wpv-views' )
+					),
+					'error_message'	=> array(
+						'post_relationship'	=> array(
+							'no_ancestors_available'	=> __( 'Before using a post relationship filter, you need to set a Types parent-child relationship for the post types selected in the Content Selection section.', 'wpv-views' ),
+							'no_ancestors_defined'		=> __( 'Before using a post relationship filter, you need to set a Types parent-child relationship for post types.', 'wpv-views' )
+						),
+					),
+				),
+				'toolbar_buttons'	=> array(
+					'text_search'	=> array(
+						'nonce'		=> wp_create_nonce( 'wpv_view_filter_post_search_nonce' ),
+						'dialog_title'	=> array(
+							'create'	=> __( 'Text search filter', 'wpv-views' ),
+							'complete'	=> __( 'Complete the search filter for this custom search', 'wpv-views' )
+						),
+						'warning'	=> array(
+							'valid'		=> __( 'This View already has a valid search filter, but it is missing the text search shortcode. You can override the filter settings and add the shortcode here.', 'wpv-views' ),
+							'specific'	=> __( 'This View already has a filter set to filter by a specific string. You can fix this filter here.', 'wpv-views' ),
+							'missing'	=> __( 'This View already has a content text search, but the relevant filter is missing. You can add this filter here.', 'wpv-views' )
+						),
+						'tooltip'		=> array(
+							'original'	=> __( 'You can add a text search to this form', 'wpv-views' ),
+							'complete'	=> __( 'This form contains a text search already', 'wpv-views' ),
+							'missing'	=> __( 'You have a text search in this form, click here to create the search filter that is missing', 'wpv-views' ),
+							'wrong'		=> __( 'You have a text search in this form, but it is linked to a broken search filter', 'wpv-views' ),
+						),
+					),
+					'submit'	=> array(
+						'dialog_title'	=> __( 'Submit button for this custom search', 'wpv-views' ),
+						'tooltip'		=> array(
+							'original'		=> __( 'Use the submit button to get results based on the form values', 'wpv-views' ),
+							'complete'		=> __( 'This form has a submit button already', 'wpv-views' ),
+							'incomplete'	=> __( 'You need to add a submit button', 'wpv-views' ),
+							'irrelevant'	=> __( 'You do not need a submit button in this form', 'wpv-views' ),
+							'irrelevant_added' => __( 'You do not need a submit button in this form, although you already have one', 'wpv-views' )
+						),
+					),
+					'reset'		=> array(
+						'dialog_title'	=> __( 'Reset button for this custom search', 'wpv-views' ),
+						'tooltip'		=> array(
+							'original'		=> __( 'You can use a reset button that will take the search form to its original state', 'wpv-views' ),
+							'complete'		=> __( 'This form has a reset button already', 'wpv-views' ),
+							'incomplete'	=> __( 'You can add a reset button to this form', 'wpv-views' )
+						),
+					),
+					'spinner'	=> array(
+						'dialog_title'	=> __( 'Spinner container for this custom search', 'wpv-views' ),
+						'tooltip'		=> array(
+							'original'		=> __( 'You can use a spinner container that will be shown when performing any automatic update', 'wpv-views' ),
+							'complete'		=> __( 'This form has a spinner container already', 'wpv-views' ),
+							'useless'		=> __( 'No spinner container will be shown as this custom search is not performing any automatic update', 'wpv-views' ),
+						)
+					)
+				)
+			)
+		);
 		
 		$inline_content_templates_translations = array(
 			'pointer'		=> array(
@@ -1156,7 +1207,7 @@ class WP_Views_plugin extends WP_Views {
 		wp_register_script( 
 			'views-layout-template-js', 
 			WPV_URL . "/res/js/redesign/views_section_layout_template.js", 
-			array( 'jquery', 'underscore', 'views-codemirror-conf-script' ), 
+			array( 'jquery', 'underscore', 'views-codemirror-conf-script', 'toolset-event-manager' ), 
 			WPV_VERSION, 
 			false 
 		);
@@ -1470,18 +1521,11 @@ class WP_Views_plugin extends WP_Views {
 		}
 
 		if ( 'views-editor' == $page ) {
-			if ( ! wp_script_is( 'views-editor-js' ) ) {
-				wp_enqueue_script( 'views-editor-js' );
-			}
-			if ( ! wp_script_is( 'views-filters-js' ) ) {
-				wp_enqueue_script( 'views-filters-js' );
-			}
-			if ( ! wp_script_is( 'views-layout-template-js' ) ) {
-				wp_enqueue_script( 'views-layout-template-js' );
-			}
-			if ( ! wp_script_is( 'views-layout-wizard-script' ) ) {
-				wp_enqueue_script( 'views-layout-wizard-script' );
-			}
+			wp_enqueue_script( 'views-editor-js' );
+			wp_enqueue_script( 'views-filters-js' );
+			wp_enqueue_script( 'wpv-parametric-admin-script' );
+			wp_enqueue_script( 'views-layout-template-js' );
+			wp_enqueue_script( 'views-layout-wizard-script' );
 			if ( 
 				function_exists( 'wp_enqueue_media' ) 
 				&& ! wp_script_is( 'icl_media-manager-js' ) 
@@ -1496,22 +1540,17 @@ class WP_Views_plugin extends WP_Views {
 			wp_enqueue_script( 'views-suggestion_script' );
 			wp_enqueue_style ('views_suggestion_style');
 			wp_enqueue_style ('views_suggestion_style2');
+			
+			wp_enqueue_style('toolset-notifications-css');
             
         }
 
 		if ( 'view-archives-editor' == $page ) {
-            if ( ! wp_script_is( 'views-archive-editor-js' ) ) {
-				wp_enqueue_script( 'views-archive-editor-js' );
-			}
-			if ( ! wp_script_is( 'views-filters-js' ) ) {
-				wp_enqueue_script( 'views-filters-js' );
-			}
-			if ( ! wp_script_is( 'views-layout-template-js' ) ) {
-				wp_enqueue_script( 'views-layout-template-js' );
-			}
-			if ( ! wp_script_is( 'views-layout-wizard-script' ) ) {
-				wp_enqueue_script( 'views-layout-wizard-script' );
-			}
+			wp_enqueue_script( 'views-archive-editor-js' );
+			wp_enqueue_script( 'views-filters-js' );
+			wp_enqueue_script( 'wpv-parametric-admin-script' );
+			wp_enqueue_script( 'views-layout-template-js' );
+			wp_enqueue_script( 'views-layout-wizard-script' );
 			if ( 
 				function_exists( 'wp_enqueue_media' ) 
 				&& ! wp_script_is( 'icl_media-manager-js' ) 
@@ -1526,6 +1565,8 @@ class WP_Views_plugin extends WP_Views {
 			wp_enqueue_script( 'views-suggestion_script' );
 			wp_enqueue_style ('views_suggestion_style');
 			wp_enqueue_style ('views_suggestion_style2');
+			
+			wp_enqueue_style('toolset-notifications-css');
 			
 		}
 		

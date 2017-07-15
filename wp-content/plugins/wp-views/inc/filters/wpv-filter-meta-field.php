@@ -529,7 +529,8 @@ class WPV_Meta_Field_Filter {
 					</div>
 					<div class="js-wpv-filter-multiple-toolset-messages"></div>
 					<?php
-					$doc_link = apply_filters( 'wpv_filter_wpv_meta_field_filter_documentaton_link', '', $meta_type );
+					// todo: Uncomment and fix the line below, addressing views-1198 when the related doc tickets (ToolsetDocs-577 & ToolsetDocs-578) will be resolved.
+					$doc_link = ''; //apply_filters( 'wpv_filter_wpv_meta_field_filter_documentaton_link', '', $meta_type );
 					if ( ! empty( $doc_link ) ) {
 						?>
 						<span class="filter-doc-help">
@@ -770,6 +771,8 @@ class WPV_Custom_Field_Filter {
     static function on_load() {
         add_action( 'init',			array( 'WPV_Custom_Field_Filter', 'init' ) );
 		add_action( 'admin_init',	array( 'WPV_Custom_Field_Filter', 'admin_init' ) );
+		// Register custom search filter in dialog
+		add_filter( 'wpv_filter_wpv_register_form_filters_shortcodes', array( 'WPV_Custom_Field_Filter', 'wpv_custom_search_filter_shortcodes_postmeta' ) );
     }
 
     static function init() {
@@ -876,6 +879,109 @@ class WPV_Custom_Field_Filter {
 			);
 		}
 		return $link;
+	}
+	
+	/**
+	 * Register the wpv-control-postmeta shortcode filter.
+	 *
+	 * @since 2.4.0
+	 */
+	
+	static function wpv_custom_search_filter_shortcodes_postmeta( $shortcodes ) {
+		if (
+			function_exists( 'wpcf_admin_fields_get_groups' ) 
+			&& function_exists( 'wpcf_admin_fields_get_fields_by_group' )
+		) {
+			$groups = wpcf_admin_fields_get_groups( TYPES_CUSTOM_FIELD_GROUP_CPT_NAME, 'group_active' );
+			if ( ! empty( $groups ) ) {
+				$subgroups = array();
+				foreach ( $groups as $group ) {
+					$fields = wpcf_admin_fields_get_fields_by_group( $group['id'], 'slug', true, false, true );
+					if ( ! empty( $fields ) ) {
+						$subgroup_items = array();
+						
+						foreach ( $fields as $field ) {
+							$subgroup_items[ 'postmeta_' . $field['id'] ] = array(
+								'name'			=> $field['name'],
+								'present'		=> 'custom-field-' . $field['meta_key'] . '_compare',
+								'params'		=> array(
+									'attributes'	=> array(
+										'field'	=> $field['meta_key']
+									)
+								)
+							);
+						}
+						$subgroups[] = array(
+							'custom_search_filter_group' => $group['name'],
+							'custom_search_filter_items' => $subgroup_items
+						);
+					}
+				}
+				$shortcodes['wpv-control-postmeta'] = array(
+					'query_type_target'					=> 'posts',
+					'query_filter_define_callback'		=> array( 'WPV_Custom_Field_Filter', 'query_filter_define_callback' ),
+					'custom_search_filter_subgroups'	=> $subgroups
+				);
+			}
+		}
+		return $shortcodes;
+	}
+	
+	/**
+	 * Callback to create or modify the query filter after creating or editing the custom search shortcode.
+	 *
+	 * @param $view_id		int		The View ID
+	 * @param $shortcode		string	The affected shortcode, wpv-control-postmeta
+	 * @param $attributes	array	The associative array of attributes for this shortcode
+	 * @param $attributes_raw array	The associative array of attributes for this shortcode, as collected from its dialog, before being filtered
+	 *
+	 * @uses wpv_action_wpv_save_item
+	 *
+	 * @since 2.4.0
+	 */
+	
+	static function query_filter_define_callback( $view_id, $shortcode, $attributes, $attributes_raw ) {
+		if ( ! isset( $attributes['url_param'] ) ) {
+			return;
+		}
+		$view_array = get_post_meta( $view_id, '_wpv_settings', true );
+		
+		$url_param = sanitize_text_field( $attributes_raw['url_param'] );
+		$url_param_min = sanitize_text_field( $attributes_raw['url_param_min'] );
+		$url_param_max = sanitize_text_field( $attributes_raw['url_param_max'] );
+		
+		$value_value = 'URL_PARAM(' . $attributes['url_param'] . ')';
+		$value_compare = isset( $attributes_raw['value_compare'] ) ? sanitize_text_field( $attributes_raw['value_compare'] ) : '=';
+		$value_type = isset( $attributes_raw['value_type'] ) ? sanitize_text_field( $attributes_raw['value_type'] ) : 'CHAR';
+		
+		$value_value_old = isset( $view_array['custom-field-' . $attributes['field'] . '_value'] ) 
+			? $view_array['custom-field-' . $attributes['field'] . '_value']
+			: '';
+		$value_value_old_multi = explode( ',', $value_value_old );
+		switch ( $value_compare ) {
+			case 'BETWEEN':
+			case 'NOT BETWEEN':
+				$value_value = 'URL_PARAM(' . $url_param_min . '),URL_PARAM(' . $url_param_max . ')';
+				break;
+			case 'BETWEEN LOW':
+			case 'NOT BETWEEN LOW':
+				$value_value_old_multi[ 0 ] = $value_value;
+				$value_value = implode( ',', $value_value_old_multi );
+				$value_compare = str_replace( ' LOW', '', $value_compare );
+				break;
+			case 'BETWEEN HIGH':
+			case 'NOT BETWEEN HIGH':
+				$value_value_old_multi[ 1 ] = $value_value;
+				$value_value = implode( ',', $value_value_old_multi );
+				$value_compare = str_replace( ' HIGH', '', $value_compare );
+				break;
+		}
+		
+		$view_array['custom-field-' . $attributes['field'] . '_value'] = $value_value;
+		$view_array['custom-field-' . $attributes['field'] . '_compare'] = $value_compare;
+		$view_array['custom-field-' . $attributes['field'] . '_type'] = $value_type;
+		$result = update_post_meta( $view_id, '_wpv_settings', $view_array );
+		do_action( 'wpv_action_wpv_save_item', $view_id );
 	}
 	
 }

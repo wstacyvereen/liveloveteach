@@ -34,6 +34,11 @@ $wpv_shortcodes['wpv-post-comments-number'] = array('wpv-post-comments-number', 
 $wpv_shortcodes['wpv-post-class'] = array('wpv-post-class', __('Post class', 'wpv-views'), 'wpv_shortcode_wpv_post_class');
 $wpv_shortcodes['wpv-post-edit-link'] = array('wpv-post-edit-link', __('Post edit link', 'wpv-views'), 'wpv_shortcode_wpv_post_edit_link');
 $wpv_shortcodes['wpv-post-menu-order'] = array('wpv-post-menu-order', __('Post menu order', 'wpv-views'), 'wpv_shortcode_wpv_post_menu_order');
+/*
+ * todo: Uncomment the lines below, addressing views-1147 when the related WPML issue (wpmlcore-1633) is resolved.
+ */
+//$wpv_shortcodes['wpv-post-next-link'] = array( 'wpv-post-next-link', __( 'Post next link', 'wpv-views' ), 'wpv_shortcode_wpv_post_next_link' );
+//$wpv_shortcodes['wpv-post-previous-link'] = array( 'wpv-post-previous-link', __( 'Post previous link', 'wpv-views' ), 'wpv_shortcode_wpv_post_previous_link' );
 
 
 
@@ -486,13 +491,32 @@ function wpv_shortcodes_get_wpv_archive_link_data() {
  *
  * Note:
  *
+ * @since 2.4.0 Added the option to use [wpv-user field="profile_picture"] to fetch the user profile picture. The "field"
+ *              attribute of the shortcode can take several values. If those values match a user column, we get that data.
+ *              If not, we default to a usermeta field with that key. The "profile_picture" for the "field" attribute is
+ *              neither a user column nor a usermeta field key, so we are reserving this value for a purpose that has no
+ *              database match.
+ *
  */
 
 function wpv_current_user($attr){
 	global $current_user;
-	extract(
-		shortcode_atts( array('info' => 'display_name'), $attr )
-	);
+
+    $default_size = 96;
+
+    extract(
+        $attr = shortcode_atts(
+            array(
+                'info' => 'display_name',
+                'profile-picture-size' => $default_size,
+                'profile-picture-default-url' => '',
+                'profile-picture-alt' => false,
+                'profile-picture-shape' => 'circle',
+            ),
+            $attr
+        )
+    );
+
 	$out = '';
 
 	if ( $current_user->ID > 0 ) {
@@ -515,6 +539,9 @@ function wpv_current_user($attr){
 			case 'display_name':
 				$out = $current_user->display_name;
 				break;
+            case 'profile_picture':
+                $out = wpv_get_avatar( $current_user->ID, $attr['profile-picture-size'], $attr['profile-picture-default-url'], $attr['profile-picture-alt'], $attr['profile-picture-shape'] );
+                break;
 			case 'logged_in':
 				$out = 'true';
 				break;
@@ -583,10 +610,37 @@ function wpv_shortcodes_get_wpv_current_user_data() {
                             'id'			=> __('User ID', 'wpv-views'),
                             'logged_in'		=> __('Logged in', 'wpv-views'),
                             'role'			=> __('User role', 'wpv-views'),
+                            'profile_picture' => __( 'Profile picture', 'wpv-views' ),
                         ),
                         'default' => 'display_name',
 						'description' => __( 'Display the selected information for the current user', 'wpv-views' ),
 						'documentation' => '<a href="http://codex.wordpress.org/Function_Reference/get_userdata" target="_blank">' . __( 'WordPress get_userdata function', 'wpv-views' ) . '</a>'
+                    ),
+                    'profile-picture-size' => array(
+                        'label' => __( 'Size', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Size of the current user\'s profile picture in pixels.', 'wpv-views' ),
+                    ),
+                    'profile-picture-alt' => array(
+                        'label' => __( 'Alternative text', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Alternative text for the current user\'s profile picture.', 'wpv-views' ),
+                    ),
+                    'profile-picture-shape' => array(
+                        'label' => __( 'Shape', 'wpv-views'),
+                        'type' => 'select',
+                        'options' => array(
+                            'circle' => __( 'Circle', 'wpv-views' ),
+                            'square' => __( 'Square', 'wpv-views' ),
+                            'custom' => __( 'Custom', 'wpv-views' ),
+                        ),
+                        'default' => 'circle',
+                        'description' => __( 'Display the current user\'s profile picture in this shape. For "custom" shape, custom CSS is needed for "wpv-profile-picture-shape-custom" CSS class.', 'wpv-views' ),
+                    ),
+                    'profile-picture-default-url' => array(
+                        'label' => __( 'Default URL', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Default url for an image. Leave blank for the "Mystery Man".', 'wpv-views' )
                     ),
                 ),
             ),
@@ -993,26 +1047,29 @@ function wpv_shortcodes_get_wpv_login_form_data()  {
                         'type' => 'url',
 						'description' => __( 'URL to redirect users when the login fails. Defaults to the current URL.', 'wpv-views' ),
                     ),
-                    'allow_remember' => array(
-                        'label' => __( 'Remember me checkbox', 'wpv-views'),
-                        'type' => 'radio',
-                        'options' => array(
-                            'true' => __('Show', 'wpv-views'),
-                            'false' => __('Hide', 'wpv-views'),
-                        ),
-                        'default' => 'false',
-						'description' => __( 'Show or hide the checkbox for remembering the user.', 'wpv-views' )
-                    ),
-                    'remember_default' => array(
-                        'label' => __( 'Remember me checkbox default state', 'wpv-views'),
-                        'type' => 'radio',
-                        'options' => array(
-                            'true' => __('Checked', 'wpv-views'),
-                            'false' => __('Unchecked', 'wpv-views'),
-                        ),
-                        'default' => 'false',
-						'description' => __( 'Check the checkbox for remembering the user in case it is shown.', 'wpv-views' )
-                    ),
+					'remember_me_combo'	=> array(
+						'label'		=> __( 'Remember me checkbox', 'wpv-views' ),
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'allow_remember'	=> array(
+								'type'			=> 'radio',
+								'options'		=> array(
+									'true'	=> __( 'Show checkbox', 'wpv-views' ),
+									'false'	=> __( 'Hide checkbox', 'wpv-views' ),
+								),
+								'default'		=> 'false',
+							),
+							'remember_default' => array(
+								'pseudolabel'	=> __( 'Default state', 'wpv-views' ),
+								'type'			=> 'radio',
+								'options'		=> array(
+									'true'	=> __( 'Checked', 'wpv-views' ),
+									'false'	=> __( 'Unchecked', 'wpv-views' ),
+								),
+								'default'		=> 'false',
+							),
+						)
+					),
                 ),
             ),
         ),
@@ -1226,7 +1283,7 @@ function wpv_shortcode_wpv_forgot_password_form( $atts ) {
 	extract(
 		shortcode_atts(
 			array(
-				'redirect_url'		=> remove_query_arg( array( 'error' ), $current_url ), //$current_url, //wp_login_url(),
+				'redirect_url'		=> remove_query_arg( array( 'wpv_error' ), $current_url ), //$current_url, //wp_login_url(),
 				'redirect_url_fail'	=> remove_query_arg( array( 'checkemail' ), $current_url ), //$current_url,
 				'reset_password_url' => ''
 			),
@@ -1421,7 +1478,7 @@ function wpv_shortcodes_wpv_do_password_lost() {
 
 		if ( is_wp_error( $errors ) ) {
 			// Errors found
-			$redirect_url = add_query_arg( 'error', join( ',', $errors->get_error_codes() ), $redirect_fail );
+			$redirect_url = add_query_arg( 'wpv_error', join( ',', $errors->get_error_codes() ), $redirect_fail );
 		} else {
 			// Email sent
 			$redirect_url = add_query_arg( 'checkemail', 'confirm', $redirect_to );
@@ -1517,7 +1574,7 @@ function wpv_shortcode_wpv_reset_password_form( $atts ) {
 	extract(
 		shortcode_atts(
 			array(
-				'redirect_url'		=> remove_query_arg( array( 'error' ), $current_url ), //wp_login_url(),
+				'redirect_url'		=> remove_query_arg( array( 'wpv_error' ), $current_url ), //wp_login_url(),
 				'redirect_url_fail'	=> remove_query_arg( array( 'password' ), $current_url )
 			),
 			$atts
@@ -1688,7 +1745,7 @@ function wpv_shortcodes_wpv_do_password_reset() {
 				array(
 					'login' => $rp_login,
 					'key' => $rp_key,
-					'error' => $fail_code
+					'wpv_error' => $fail_code
 				),
 				$redirect_fail
 			);
@@ -1703,7 +1760,7 @@ function wpv_shortcodes_wpv_do_password_reset() {
 				array(
 					'login' => $rp_login,
 					'key' => $rp_key,
-					'error' => 'password_reset_empty'
+					'wpv_error' => 'password_reset_empty'
 				),
 				$redirect_fail
 			);
@@ -1719,7 +1776,7 @@ function wpv_shortcodes_wpv_do_password_reset() {
 					array(
 						'login' => $rp_login,
 						'key' => $rp_key,
-						'error' => 'password_reset_mismatch'
+						'wpv_error' => 'password_reset_mismatch'
 					),
 					$redirect_fail
 				);
@@ -1808,11 +1865,11 @@ function wpv_resetpass_errors ( $content, $args ) {
 	$error_code = '';
 
 	if (
-		isset( $_REQUEST['error'] )
-		&& $_REQUEST['error'] != ''
+		isset( $_REQUEST['wpv_error'] )
+		&& $_REQUEST['wpv_error'] != ''
 	) {
 		$error_string = __( '<strong>ERROR</strong>: ', 'wpv-views' );
-		$error_code = $_REQUEST['error'];
+		$error_code = $_REQUEST['wpv_error'];
 
 		switch( $error_code ) {
 			case 'expiredkey':
@@ -2062,15 +2119,27 @@ add_filter('allowed_redirect_hosts', 'wpv_whitelisted_domains', 10, 2);
  *
  * Note:
  *
+ * @since 2.4.0 Added the option to use [wpv-user field="profile_picture"] to fetch the user profile picture. The "field"
+ *              attribute of the shortcode can take several values. If those values match a user column, we get that data.
+ *              If not, we default to a usermeta field with that key. The "profile_picture" for the "field" attribute is
+ *              neither a user column nor a usermeta field key, so we are reserving this value for a purpose that has no
+ *              database match.
+ *
  */
 
 function wpv_user( $attr ) {
 
+    $default_size = 96;
+
 	extract(
-		shortcode_atts( 
+        $attr = shortcode_atts(
 			array(
-			'field' => 'display_name',
-			'id' => ''
+			    'field' => 'display_name',
+			    'id' => '',
+                'size' => $default_size,
+                'default-url' => '',
+                'alt' => false,
+                'shape' => 'circle',
 			), 
 			$attr 
 		)
@@ -2126,6 +2195,9 @@ function wpv_user( $attr ) {
 		case 'display_name':
 			$out = $data->$field;
 			break;
+        case 'profile_picture':
+            $out = wpv_get_avatar( $data->ID, $attr['size'], $attr['default-url'], $attr['alt'], $attr['shape'] );
+            break;
 		case 'user_login':
 			$out = $data->$field;
 			break;
@@ -2166,7 +2238,7 @@ function wpv_user( $attr ) {
 			$out = $data->$field;
 			break;
 		case 'spam':
-			$out = $data->$field;
+			$out = isset( $data->$field ) ? $data->$field : '';
 			break;
 		case 'user_id':
 		case 'ID':
@@ -2204,6 +2276,51 @@ function wpv_shortcodes_get_wpv_user_data( $parameters = array(), $overrides = a
     $data = array(
         'user-selection'	=> true
     );
+
+    $profile_picture_in_parameters = isset( $parameters['attributes'] )
+        && isset( $parameters['attributes']['field'] )
+        && 'profile_picture' == $parameters['attributes']['field'];
+
+    $profile_picture_in_overrides = isset( $overrides['attributes'] )
+        && isset( $overrides['attributes']['field'] )
+        && 'profile_picture' == $overrides['attributes']['field'];
+
+    if ( $profile_picture_in_parameters || $profile_picture_in_overrides ) {
+        $data['attributes'] = array(
+            'display-options' => array(
+                'label' => __( 'Display options', 'wpv-views' ),
+                'header' => __( 'Display options', 'wpv-views' ),
+                'fields' => array(
+                    'size' => array(
+                        'label' => __( 'Size', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Size of the profile picture in pixels.', 'wpv-views' ),
+                    ),
+                    'alt' => array(
+                        'label' => __( 'Alternative text', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Alternative text for the profile picture.', 'wpv-views' ),
+                    ),
+                    'shape' => array(
+                        'label' => __( 'Shape', 'wpv-views'),
+                        'type' => 'select',
+                        'options' => array(
+                            'circle' => __( 'Circle', 'wpv-views' ),
+                            'square' => __( 'Square', 'wpv-views' ),
+                            'custom' => __( 'Custom', 'wpv-views' ),
+                        ),
+                        'default' => 'circle',
+                        'description' => __( 'Display the profile picture in this shape. For "custom" shape, custom CSS is needed for "wpv-profile-picture-shape-custom" CSS class.', 'wpv-views' ),
+                    ),
+                    'default-url' => array(
+                        'label' => __( 'Default URL', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Default url for an image. Leave blank for the "Mystery Man".', 'wpv-views' )
+                    ),
+                ),
+            ),
+        );
+    }
 	
 	$dialog_label = __( 'User data', 'wpv-views' );
 	$dialog_target = false;
@@ -2251,6 +2368,9 @@ function wpv_shortcodes_get_wpv_user_data_title( $field ) {
 		case 'display_name':
 			$title = __( 'Display Name', 'wpv-views' );
 			break;
+        case 'profile_picture':
+            $title = __( 'Profile Picture', 'wpv-views' );
+            break;
 		case 'user_nicename':
 			$title = __( 'Nicename', 'wpv-views' );
 			break;
@@ -2706,11 +2826,12 @@ function wpv_shortcode_wpv_post_body($atts){
 	do_action( 'wpv_before_shortcode_post_body' );
 
 
-	global $WPV_templates, $WPVDebug;
+	global $WP_Views, $WPV_templates, $WPVDebug;
 
-	static $stop_infinite_loop_keys;
-
-	if ( isset( $atts['suppress_filters'] ) && ( $atts['suppress_filters'] == 'true' ) ) {
+	if ( 
+		isset( $atts['suppress_filters'] ) 
+		&& $atts['suppress_filters'] == 'true' 
+	) {
 		$suppress_filters = true;
 	} else {
 		$suppress_filters = false;
@@ -2751,16 +2872,15 @@ function wpv_shortcode_wpv_post_body($atts){
 		return;
 	}
 	
+	static $stop_infinite_loop_keys;
+	
+	$view_settings = apply_filters( 'wpv_filter_wpv_get_view_settings', array() );
+	$current_item_type = apply_filters( 'wpv_filter_wpv_get_query_type', 'posts' );
+	$current_stop_infinite_loop_key = $current_item_type . '-';
+	
 	$WPVDebug->wpv_debug_start( $ct_id, $atts, 'content-template' );
 	$WPVDebug->set_index();
 	if ( $WPVDebug->user_can_debug() ) {
-		global $WP_Views;
-		$current_item_type = 'posts';
-		$view_settings = $WP_Views->get_view_settings();
-		if ( isset( $view_settings['view-query-mode'] ) && $view_settings['view-query-mode'] == 'normal' &&
-			isset( $view_settings['query_type'] ) && isset( $view_settings['query_type'][0] ) && $view_settings['query_type'][0] != 'posts' ) {
-			$current_item_type = $view_settings['query_type'][0]; // taxonomy or users
-		}
 		switch( $current_item_type ) {
 			case 'posts':
 				$WPVDebug->add_log( 'content-template', $post );
@@ -2805,22 +2925,32 @@ function wpv_shortcode_wpv_post_body($atts){
 		// Check for infinite loops where a View template contains a
 		// wpv-post-body shortcode without a View template specified
 		// or a View template refers to itself directly or indirectly.
-		$key = (string) $post->ID;
+		switch( $current_item_type ) {
+			case 'posts':
+				$current_stop_infinite_loop_key .= (string) $post->ID . '-';
+				break;
+			case 'taxonomy':
+				$current_stop_infinite_loop_key .= (string) $WP_Views->taxonomy_data['term']->term_id . '-';
+				break;
+			case 'users':
+				$current_stop_infinite_loop_key .= (string) $WP_Views->users_data['term']->ID . '-';
+				break;
+		}
 		if ( isset( $post->view_template_override ) ) {
-			$key .= $post->view_template_override;
+			$current_stop_infinite_loop_key .= $post->view_template_override;
 		} else {
 			// This only hapens in the unsupported scenario of no view_template attribute
-			$key .= '##no#view_template#attribute##';
+			$current_stop_infinite_loop_key .= '##no#view_template#attribute##';
 		}
-
-		if ( ! isset( $stop_infinite_loop_keys[ $key ] ) ) {
+		
+		if ( ! isset( $stop_infinite_loop_keys[ $current_stop_infinite_loop_key ] ) ) {
 			
 			/**
-			 * Prevent infinite loops: check post ID and view_template_override
+			 * Prevent infinite loops: check the looped object ID and view_template_override
 			 * which is based on the view_template attribute 
-			 * so we can not pass the same post and same CT/None more than once.
+			 * so we can not pass the same object and same CT/None more than once.
 			 */
-			$stop_infinite_loop_keys[$key] = 1;
+			$stop_infinite_loop_keys[ $current_stop_infinite_loop_key ] = 1;
 
 			if ( $suppress_filters ) {
 
@@ -2841,7 +2971,7 @@ function wpv_shortcode_wpv_post_body($atts){
 				$filter_state->restore( );
 			}
 
-			unset( $stop_infinite_loop_keys[ $key ] );
+			unset( $stop_infinite_loop_keys[ $current_stop_infinite_loop_key ] );
 			
 		} else {
 			
@@ -2925,7 +3055,6 @@ function wpv_shortcodes_register_wpv_post_body_data( $views_shortcodes ) {
 }
 
 function wpv_shortcodes_get_wpv_post_body_data() {
-	global $wpdb;
 	global $wpdb, $sitepress;
 	$values_to_prepare = array();
 	$wpml_join = $wpml_where = "";
@@ -3040,14 +3169,14 @@ function wpv_shortcodes_get_wpv_post_body_data() {
                         'default_force' => 'None',
                     ),
                     'suppress_filters' => array(
-                        'label' => __( 'Suppress third-party filters ', 'wpv-views'),
-                        'type' => 'radio',
-                        'options' => array(
-                            'true' => __('Yes', 'wpv-views'),
-                            'false' => __('No', 'wpv-views'),
+                        'label'		=> __( 'Third-party filters ', 'wpv-views'),
+                        'type'		=> 'radio',
+                        'options'	=> array(
+                            'true'	=> __( 'Suppress third party filters', 'wpv-views' ),
+                            'false'	=> __( 'Keep third party filters', 'wpv-views' ),
                         ),
-                        'default' => 'false',
-						'description' => __( 'Avoid applying third-party filter into the output.', 'wpv-views' )
+                        'default'	=> 'false',
+						'description' => __( 'Avoid applying third-party filters into the output.', 'wpv-views' )
                     ),
 					/*
                     'output' => array(
@@ -3355,23 +3484,29 @@ function wpv_shortcodes_get_wpv_post_excerpt_data() {
 		                ),
 		                'default'		=> 'formatted',
 	                ),
-                    'length'	=> array(
-                        'label'			=> __( 'Excerpt length', 'wpv-views'),
-                        'type'			=> 'number',
-                        'default'		=> '',
-                        'description'	=> __('This will shorten the excerpt to a specific length. Leave blank for default.', 'wpv-views'),
-                        'placeholder'	=> __('Enter the excerpt length.', 'wpv-views'),
-                    ),
-                    'count'		=> array(
-                        'label'			=> __( 'Count length by', 'wpv-views'),
-                        'type'			=> 'radio',
-                        'options'		=> array(
-                            'char'		=> __('Characters', 'wpv-views'),
-                            'word'		=> __('Words', 'wpv-views'),
-                        ),
-                        'default'		=> 'char',
-						'description'	=> __('You can create an excerpt based on the number of words or characters.', 'wpv-views'),
-                    ),
+					'length_combo'	=> array(
+						'label'		=> __( 'Excerpt length', 'wpv-views' ),
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'length'	=> array(
+								'pseudolabel'	=> __( 'Length count', 'wpv-views'),
+								'type'			=> 'number',
+								'default'		=> '',
+								'description'	=> __('This will shorten the excerpt to a specific length. Leave blank for default.', 'wpv-views'),
+								'placeholder'	=> __('Enter the excerpt length.', 'wpv-views'),
+							),
+							'count'		=> array(
+								'pseudolabel'	=> __( 'Count length by', 'wpv-views'),
+								'type'			=> 'radio',
+								'options'		=> array(
+									'char'		=> __('Characters', 'wpv-views'),
+									'word'		=> __('Words', 'wpv-views'),
+								),
+								'default'		=> 'char',
+								'description'	=> __('You can create an excerpt based on the number of words or characters.', 'wpv-views'),
+							),
+						)
+					),
                     'more'		=> array(
                         'label'			=> __( 'Ellipsis text', 'wpv-views'),
                         'type'			=> 'text',
@@ -3422,11 +3557,17 @@ function wpv_shortcodes_get_wpv_post_excerpt_data() {
 function wpv_shortcode_wpv_post_author($atts) {
 	$post_id_atts = new WPV_wpcf_switch_post_from_attr_id($atts);
 
+    $default_size = 96;
+
 	extract(
-		shortcode_atts(
-			array(
+        $atts = shortcode_atts(
+            array(
 				'format' => 'name',
-				'meta' => 'nickname'
+				'meta' => 'nickname',
+                'profile-picture-size' => $default_size,
+                'profile-picture-default-url' => '',
+                'profile-picture-alt' => false,
+                'profile-picture-shape' => 'circle',
 			),
 			$atts
 		)
@@ -3458,6 +3599,10 @@ function wpv_shortcode_wpv_post_author($atts) {
 		case 'meta':
 			$out = get_the_author_meta( $meta );
 			break;
+
+        case 'profile_picture':
+            $out = wpv_get_avatar( $post->post_author, $atts['profile-picture-size'], $atts['profile-picture-default-url'], $atts['profile-picture-alt'], $atts['profile-picture-shape'] );
+            break;
 
 		default:
 			$out = get_the_author();
@@ -3503,6 +3648,7 @@ function wpv_shortcodes_get_wpv_post_author_data() {
                             'link' => __('Author archive link', 'wpv-views'),
                             'url' => __('Author archive URL', 'wpv-views'),
                             'meta' => __('Author metadata', 'wpv-views'),
+                            'profile_picture' => __( 'Author profile picture', 'wpv-views' ),
                         ),
                         'default' => 'name',
 						'description' => __( 'Display this information about the current post author.', 'wpv-views' )
@@ -3541,6 +3687,32 @@ function wpv_shortcodes_get_wpv_post_author_data() {
                         ),
 						'description' => __( 'Display this metadata if that option was selected on the previous section', 'wpv-views' )
                     ),
+                    'profile-picture-size' => array(
+                        'label' => __( 'Size', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Size of the post author\'s profile picture in pixels.', 'wpv-views' ),
+                    ),
+                    'profile-picture-alt' => array(
+                        'label' => __( 'Alternative text', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Alternative text for the post author\'s profile picture.', 'wpv-views' ),
+                    ),
+                    'profile-picture-shape' => array(
+                        'label' => __( 'Shape', 'wpv-views'),
+                        'type' => 'select',
+                        'options' => array(
+                            'circle' => __( 'Circle', 'wpv-views' ),
+                            'square' => __( 'Square', 'wpv-views' ),
+                            'custom' => __( 'Custom', 'wpv-views' ),
+                        ),
+                        'default' => 'circle',
+                        'description' => __( 'Display the post author\'s profile picture in this shape. For "custom" shape, custom CSS is needed for "wpv-profile-picture-shape-custom" CSS class.', 'wpv-views' ),
+                    ),
+                    'profile-picture-default-url' => array(
+                        'label' => __( 'Default URL', 'wpv-views' ),
+                        'type' => 'text',
+                        'description' => __( 'Default image when there is no profile picture. Leave blank for the "Mystery Man".', 'wpv-views' )
+                    ),
                 ),
             ),
         ),
@@ -3548,6 +3720,36 @@ function wpv_shortcodes_get_wpv_post_author_data() {
     return $data;
 }
 
+/**
+ * wpv_get_avatar
+ *
+ * Return the avatar based on the provided arguments
+ *
+ * @param $user_id (integer) The ID of the user, either post author or user from a users listing
+ * @param $atts (atts) Shortcode arguments like "size", "alt", "default_url" and "shape".
+ *
+ * @return (string) Image HTML element that contains the avatar of the selected user.
+ *
+ * @since 2.4.0
+ */
+
+function wpv_get_avatar( $user_id, $size, $default_url, $alt, $shape ) {
+
+    $default_size = 96;
+
+    $size = intval( $size );
+    if ( $size <= 0 || $size > 512 ) {
+        $size = $default_size;
+    }
+
+    $args = array();
+
+    if ( isset( $shape ) && '' != $shape && in_array( $shape, array( 'circle', 'square', 'custom' ) ) ) {
+        $args['class'] = 'wpv-profile-picture-shape-' . $shape;
+    }
+
+    return get_avatar( $user_id, $size, $default_url, $alt, $args );
+}
 
 /**
  * Views-Shortcode: wpv-post-date
@@ -4206,9 +4408,7 @@ function wpv_shortcode_wpv_post_featured_image( $atts ) {
 				case 'original':
 					$new_info = get_post( $post_thumbnail_id );
 					$new_value = $info[$output];
-					if( isset( $new_info->$new_value ) ) {
-						$file_info = $new_info->$new_value;
-					}
+					$file_info = isset( $new_info->$new_value ) ? $new_info->$new_value : '';
 					break;
 				case 'alt':
 					$file_info = get_post_meta( $post_thumbnail_id , '_wp_attachment_image_alt', true );
@@ -4217,9 +4417,7 @@ function wpv_shortcode_wpv_post_featured_image( $atts ) {
 				default:
 					if ( $size == 'full' ) {
 						$new_info = get_post( $post_thumbnail_id );
-						if( isset( $new_info->guid ) ) {
-							$file_info = $new_info->guid;
-						}
+						$file_info = isset( $new_info->guid ) ? $new_info->guid : '';
 					} else {
 						$out_array = wp_get_attachment_image_src($post_thumbnail_id, $size );
 						$file_info = $out_array[0];
@@ -4440,72 +4638,81 @@ function wpv_shortcodes_get_wpv_post_featured_image_data() {
                 'header' => __('Display options', 'wpv-views'),
                 'fields' => array(
 					'size' => array(
-                        'label' => __('Featured image size', 'wpv-views'),
-                        'type' => 'select',
-                        'options' => $options,
-                        'default' => 'thumbnail',
+                        'label'		=> __('Featured image size', 'wpv-views'),
+                        'type'		=> 'select',
+                        'options'	=> $options,
+                        'default'	=> 'thumbnail',
                     ),
-					'width' => array(
-						'label' => __( 'Featured image width', 'wpv-views' ),
-						'type' => 'text',
-						'description' => __( 'Custom width of image in pixels.', 'wpv-views' )
-					),
-					'height' => array(
-						'label' => __( 'Featured image height', 'wpv-views' ),
-						'type' => 'text',
-						'description' => __( 'Custom height of image in pixels.', 'wpv-views' )
+					'dimensions_group'	=> array(
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'width' => array(
+								'pseudolabel'	=> __( 'Featured image width', 'wpv-views' ),
+								'type'			=> 'text',
+								'description'	=> __( 'Custom width of image in pixels.', 'wpv-views' )
+							),
+							'height' => array(
+								'pseudolabel'	=> __( 'Featured image height', 'wpv-views' ),
+								'type'			=> 'text',
+								'description'	=> __( 'Custom height of image in pixels.', 'wpv-views' )
+							)
+						)
 					),
 					'crop' => array(
-						'label' => __( 'Crop image', 'wpv-views'),
-						'type' => 'radio',
-						'options' => array(
-							'true' => __('Yes', 'wpv-views'),
-							'false' => __('No', 'wpv-views'),
+						'label'		=> __( 'Proportion', 'wpv-views' ),
+						'type'		=> 'radio',
+						'options'	=> array(
+							'false'	=> __( 'Keep opriginal proportion', 'wpv-views' ),
+							'true'	=> __( 'Crop to exact dimensions', 'wpv-views' )
 						),
 						'default' => 'false',
-						//'description' => __( 'Apply image cropping.', 'wpv-views' )
 					),
-					'crop_horizontal' => array(
-						'label' => __('Horizontal crop position', 'wpv-views'),
-						'type' => 'select',
-						'options' => array(
-							'left' => __( 'Left', 'wpv-views' ),
-							'center' => __('Center', 'wpv-views'),
-							'right' => __('Right', 'wpv-views')
-						),
-						'default' => 'center',
+					'crop_group'	=> array(
+						'type'			=> 'grouped',
+						'fields'		=> array(
+							'crop_horizontal' => array(
+								'pseudolabel'	=> __('Horizontal crop position', 'wpv-views'),
+								'type'			=> 'select',
+								'options'		=> array(
+									'left'		=> __( 'Left', 'wpv-views' ),
+									'center'	=> __('Center', 'wpv-views'),
+									'right'		=> __('Right', 'wpv-views')
+								),
+								'default'		=> 'center',
+							),
+							'crop_vertical'	=> array(
+								'pseudolabel'	=> __('Vertical crop position', 'wpv-views'),
+								'type'			=> 'select',
+								'options'		=> array(
+									'top'		=> __( 'Top', 'wpv-views' ),
+									'center'	=> __('Center', 'wpv-views'),
+									'bottom'	=> __('Bottom', 'wpv-views')
+								),
+								'default'		=> 'center',
+							),
+						)
 					),
-					'crop_vertical' => array(
-						'label' => __('Vertical crop position', 'wpv-views'),
-						'type' => 'select',
-						'options' => array(
-							'top' => __( 'Top', 'wpv-views' ),
-							'center' => __('Center', 'wpv-views'),
-							'bottom' => __('Bottom', 'wpv-views')
-						),
-						'default' => 'center',
-					),
-					'output' => array(
-                        'label' => __('What to display', 'wpv-views'),
-                        'type' => 'select',
-                        'options' => array(
-							'img' => __( 'Image HTML tag', 'wpv-views' ),
-							'url' => __('URL of the image', 'wpv-views'),
-							'title' => __('Title of the image', 'wpv-views'),
-							'caption' => __('Caption of the image', 'wpv-views'),
-							'description' => __('Description of the image', 'wpv-views'),
-                            'alt' => __('ALT text for the image', 'wpv-views'),
-                            'author' => __('Author of the image', 'wpv-views'),
-                            'date' => __('Date of the image', 'wpv-views'),
-                            'id' => __('ID of the image', 'wpv-views'),
+					'output'	=> array(
+                        'label'		=> __('What to display', 'wpv-views'),
+                        'type'		=> 'select',
+                        'options'	=> array(
+							'img'			=> __( 'Image HTML tag', 'wpv-views' ),
+							'url'			=> __('URL of the image', 'wpv-views'),
+							'title'			=> __('Title of the image', 'wpv-views'),
+							'caption'		=> __('Caption of the image', 'wpv-views'),
+							'description'	=> __('Description of the image', 'wpv-views'),
+                            'alt'			=> __('ALT text for the image', 'wpv-views'),
+                            'author'		=> __('Author of the image', 'wpv-views'),
+                            'date'			=> __('Date of the image', 'wpv-views'),
+                            'id'			=> __('ID of the image', 'wpv-views'),
                         ),
-                        'default' => 'img',
+                        'default'	=> 'img',
                     ),
-					'class' => array(
-                        'label' => __( 'Class', 'wpv-views'),
-                        'type' => 'text',
-                        'description' => __( 'Space-separated list of classnames that will be added to the image HTML tag.', 'wpv-views' ),
-                        'placeholder' => 'class1 class2',
+					'class'		=> array(
+                        'label'			=> __( 'Class', 'wpv-views'),
+                        'type'			=> 'text',
+                        'description'	=> __( 'Space-separated list of classnames that will be added to the image HTML tag.', 'wpv-views' ),
+                        'placeholder'	=> 'class1 class2',
                     ),
 					/*
                     'attr' => array(
@@ -4745,6 +4952,194 @@ function wpv_shortcodes_get_wpv_post_menu_order_data() {
 	return $data;
 }
 
+/**
+ * Views-Shortcode: wpv-post-previous-link
+ *
+ * Description: Display the current post's "Previous Post" link
+ *
+ * Parameters:
+ * 'format' => The link anchor format. Default '&laquo; %link'.
+ * 'link'   => The link permalink format. Default '%title'.
+ *
+ * Example usage:
+ * [wpv-post-previous-link]
+ *
+ * @since 2.4.0
+ *
+ */
+
+function wpv_shortcode_wpv_post_previous_link( $atts ) {
+	$post_id_atts = new WPV_wpcf_switch_post_from_attr_id( $atts );
+
+	extract(
+		shortcode_atts( array(
+			'format' => '&laquo; %link',
+			'link' => '%title',
+		), $atts )
+	);
+
+	$view_settings = apply_filters( 'wpv_filter_wpv_get_view_settings', array() );
+	$context = 'View ' . $view_settings['view_slug'];
+	$format = wpv_translate(
+		'post_control_for_previous_link_format_' . md5( $format ),
+		$format,
+		false,
+		$context
+	);
+	$link = wpv_translate(
+		'post_control_for_previous_link_text_' . md5( $link ),
+		$link,
+		false,
+		$context
+	);
+
+	$out = get_previous_post_link( $format, $link );
+
+	apply_filters( 'wpv_shortcode_debug', 'wpv-post-previous-link', json_encode( $atts ), '', 'Data received from cache', $out );
+
+	return $out;
+}
+
+/**
+ * wpv_shortcodes_register_wpv_post_previous_link_data
+ *
+ * Register the wpv-post-previous-link shortcode in the GUI API.
+ *
+ * @since 2.4.0
+ */
+
+add_filter( 'wpv_filter_wpv_shortcodes_gui_data', 'wpv_shortcodes_register_wpv_post_previous_link_data' );
+
+function wpv_shortcodes_register_wpv_post_previous_link_data( $views_shortcodes ) {
+	$views_shortcodes['wpv-post-previous-link'] = array(
+		'callback' => 'wpv_shortcodes_get_wpv_post_previous_link_data'
+	);
+	return $views_shortcodes;
+}
+
+function wpv_shortcodes_get_wpv_post_previous_link_data() {
+	$data = array(
+		'name' => __( 'Post previous link', 'wpv-views' ),
+		'label' => __( 'Post previous link', 'wpv-views' ),
+		'post-selection' => true,
+		'attributes' => array(
+			'display-options' => array(
+				'label' => __( 'Display options', 'wpv-views' ),
+				'header' => __( 'Display options', 'wpv-views' ),
+				'fields' => array(
+					'format' => array(
+						'type' => 'text',
+						'label' => __( 'Format', 'wpv-views' ),
+						'description' => __( 'The link anchor format. Should contain \'%link\' in order to display a link, otherwise it will create plain text. Default \'&laquo; %link\'.', 'wpv-views' ),
+						'default' => '&laquo; %link',
+					),
+					'link' => array(
+						'type' => 'text',
+						'label' => __( 'Link', 'wpv-views' ),
+						'description' => __( 'The link permalink format. Can contain \'%title\' for the previous post title or \'%date\' for the previous post date. Default \'%title\'.', 'wpv-views' ),
+						'default' => '%title',
+					),
+				),
+			),
+		),
+	);
+	return $data;
+}
+
+/**
+ * Views-Shortcode: wpv-post-next-link
+ *
+ * Description: Display the current post's "Next Post" link
+ *
+ * Parameters:
+ * 'format' => The link anchor format. Default '%link &raquo;'.
+ * 'link'   => The link permalink format. Default '%title'.
+ *
+ * Example usage:
+ * [wpv-post-next-link]
+ *
+ * @since 2.4.0
+ *
+ */
+
+function wpv_shortcode_wpv_post_next_link( $atts ) {
+	$post_id_atts = new WPV_wpcf_switch_post_from_attr_id( $atts );
+
+	extract(
+		shortcode_atts( array(
+			'format' => '%link &raquo;',
+			'link' => '%title',
+		), $atts )
+	);
+
+	$view_settings = apply_filters( 'wpv_filter_wpv_get_view_settings', array() );
+	$context = 'View ' . $view_settings['view_slug'];
+	$format = wpv_translate(
+		'post_control_for_next_link_format_' . md5( $format ),
+		$format,
+		false,
+		$context
+	);
+	$link = wpv_translate(
+		'post_control_for_next_link_text_' . md5( $link ),
+		$link,
+		false,
+		$context
+	);
+
+	$out = get_next_post_link( $format, $link );
+
+	apply_filters( 'wpv_shortcode_debug', 'wpv-post-next-link', json_encode( $atts ), '', 'Data received from cache', $out );
+
+	return $out;
+}
+
+/**
+ * wpv_shortcodes_register_wpv_next_link_data
+ *
+ * Register the wpv-post-next-link shortcode in the GUI API.
+ *
+ * @since 2.4.0
+ */
+
+add_filter( 'wpv_filter_wpv_shortcodes_gui_data', 'wpv_shortcodes_register_wpv_post_next_link_data' );
+
+function wpv_shortcodes_register_wpv_post_next_link_data( $views_shortcodes ) {
+	$views_shortcodes['wpv-post-next-link'] = array(
+		'callback' => 'wpv_shortcodes_get_wpv_post_next_link_data'
+	);
+	return $views_shortcodes;
+}
+
+function wpv_shortcodes_get_wpv_post_next_link_data() {
+	$data = array(
+		'name' => __( 'Post next link', 'wpv-views' ),
+		'label' => __( 'Post next link', 'wpv-views' ),
+		'post-selection' => true,
+		'attributes' => array(
+			'display-options' => array(
+				'label' => __( 'Display options', 'wpv-views' ),
+				'header' => __( 'Display options', 'wpv-views' ),
+				'fields' => array(
+					'format' => array(
+						'type' => 'text',
+						'label' => __( 'Format', 'wpv-views' ),
+						'description' => __( 'The link anchor format. Should contain \'%link\' in order to display a link, otherwise it will create plain text. Default \'&laquo; %link\'.', 'wpv-views' ),
+						'default' => '%link &raquo;',
+					),
+					'link' => array(
+						'type' => 'text',
+						'label' => __( 'Link', 'wpv-views' ),
+						'description' => __( 'The link permalink format. Can contain \'%title\' for the next post title or \'%date\' for the next post date. Default \'%title\'.', 'wpv-views' ),
+						'default' => '%title',
+					),
+				),
+			),
+		),
+	);
+	return $data;
+}
+
 
 /**
  * Views-Shortcode: wpv-post-field
@@ -4765,6 +5160,9 @@ function wpv_shortcodes_get_wpv_post_menu_order_data() {
  *
  * Note:
  *
+ * @since unknown
+ * @since 2.4   Fixed an issue with a strange shortcode output when a name for the post field in the "wpv-post-field" shortcode is not provided.
+ *              When no $key is provided to the "get_post_meta", the function returns data for all keys.
  */
 
 function wpv_shortcode_wpv_post_field($atts) {
@@ -4785,6 +5183,12 @@ function wpv_shortcode_wpv_post_field($atts) {
 	$out = '';
 	$filters = '';
 	global $post;
+
+	// When the $name is empty, we should return an empty string, as the "get_post_meta" function will
+	// return data for all keys, which is not helpful.
+	if ( '' == $name ) {
+		return $out;
+	}
 
 	if(!empty($post)){
 		$meta = get_post_meta($post->ID, $name);
@@ -4862,26 +5266,34 @@ function wpv_shortcodes_get_wpv_post_field_data() {
                         'description' => __('The name of the custom field to display', 'wpv-views'),
                         'required' => true,
                     ),
-                    'index' => array(
-                        'label' => __( 'Index', 'wpv-views'),
-                        'type' => 'number',
-                        'description' => __('The index to use if the custom field has multiple values. If an index is not set then all values will be output.', 'wpv-views'),
-                    ),
-                    'separator' => array(
-                        'type' => 'text',
-                        'label' => __('Separator', 'wpv-views'),
-                        'description' => __('The separator between multiple values.','wpv-views'),
-                        'default' => ', ',
-                    ),
+					'index_info'	=> array(
+						'label'		=> __( 'Index and separator', 'wpv-views' ),
+						'type'		=> 'info',
+						'content'	=> __( 'If the field has multiple values, you can display just one of them or all the values using a separator.', 'pv-views' )
+					),
+					'index_combo'	=> array(
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'index' => array(
+								'pseudolabel'	=> __( 'Index', 'wpv-views' ),
+								'type'			=> 'number',
+								'description'	=> __('Leave empty to display all values.', 'wpv-views'),
+							),
+							'separator' => array(
+								'type'			=> 'text',
+								'pseudolabel'	=> __( 'Separator', 'wpv-views' ),
+								'default'		=> ', ',
+							),
+						)
+					),
 					'parse_shortcodes' => array(
-                        'type' => 'radio',
-                        'options' => array(
-                            'true' => __('Yes', 'wpv-views'),
-                            '' => __('No', 'wpv-views'),
+						'label'		=> __( 'Parse inner shortcodes', 'wpv-views' ),
+                        'type'		=> 'radio',
+                        'options'	=> array(
+                            'true'	=> __( 'Parse shortcodes inside the field values', 'wpv-views' ),
+                            ''		=> __( 'Do not parse shortcodes inside the field values', 'wpv-views' ),
                         ),
-                        'default' => '',
-                        'label' => __('Parse inner shortcodes', 'wpv-views'),
-                        'description' => __('When this option is "Yes", Views will parse all shortcodes inside field content.','wpv-views'),
+                        'default'	=> '',
                     ),
                 ),
             ),
@@ -4995,7 +5407,7 @@ function wpv_shortcodes_get_wpv_post_comments_number_data() {
                         'label' => __( 'Text to display when there is more than one comment', 'wpv-views'),
                         'type' => 'text',
                         'default' => __('% Comments', 'wpv-views'),
-						'description' => __( '%s - the number of comments', 'wpv-views' )
+						'description' => __( '% - placeholder for the number of comments', 'wpv-views' )
                     ),
                 ),
             ),
@@ -5219,6 +5631,8 @@ function wpv_shortcode_wpv_tax_description($atts){
 * Taxonomy term termmeta shortcode
 *
 * @since 1.12
+* @since 2.4    Fixed an issue with a PHP notice when a name for the taxonomy field in the "wpv-taxonomy-field" shortcode is not provided.
+ *              When no $key is provided to the "get_term_meta", the function returns an array with all the metadata for the term.
 */
 
 function wpv_shortcode_wpv_tax_field( $atts ) {
@@ -5241,6 +5655,12 @@ function wpv_shortcode_wpv_tax_field( $atts ) {
 	$filters	= '';
 	$term		= $WP_Views->get_current_taxonomy_term();
 	$meta		= false;
+
+	// When the $name is empty, we should return an empty string, as the "get_term_meta" function will
+	// return an array with all the available meta for the term instead of a certain meta value, which is not helpful.
+	if ( '' == $name ) {
+		return $out;
+	}
 
 	if ( ! empty( $term ) ) {
 		$meta = get_term_meta( $term->term_id, $name );
@@ -5303,17 +5723,26 @@ function wpv_shortcodes_get_wpv_taxonomy_field_data() {
                         'description' => __('The name of the field to display', 'wpv-views'),
                         'required' => true,
                     ),
-                    'index' => array(
-                        'label' => __( 'Index', 'wpv-views'),
-                        'type' => 'number',
-                        'description' => __('The index to use if the field has multiple values. If an index is not set then all values will be output.', 'wpv-views'),
-                    ),
-                    'separator' => array(
-                        'type' => 'text',
-                        'label' => __('Separator', 'wpv-views'),
-                        'description' => __('The separator between multiple values.','wpv-views'),
-                        'default' => ', ',
-                    ),
+					'index_info'	=> array(
+						'label'		=> __( 'Index and separator', 'wpv-views' ),
+						'type'		=> 'info',
+						'content'	=> __( 'If the field has multiple values, you can display just one of them or all the values using a separator.', 'pv-views' )
+					),
+					'index_combo'	=> array(
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'index' => array(
+								'pseudolabel'	=> __( 'Index', 'wpv-views' ),
+								'type'			=> 'number',
+								'description'	=> __('Leave empty to display all values.', 'wpv-views'),
+							),
+							'separator' => array(
+								'type'			=> 'text',
+								'pseudolabel'	=> __( 'Separator', 'wpv-views' ),
+								'default'		=> ', ',
+							),
+						)
+					),
                 ),
             ),
         ),
@@ -5479,6 +5908,11 @@ function wpv_generic_register_primary_shortcodes_dialog_groups() {
 		'wpv-post-menu-order'		=> __( 'Post menu order', 'wpv-views' ),
 		'wpv-post-field'			=> __( 'Post field', 'wpv-views' ),
 		'wpv-for-each'				=> __( 'Post field iterator', 'wpv-views' ),
+/*
+ * todo: Uncomment the lines below, addressing views-1147 when the related WPML issue (wpmlcore-1633) is resolved.
+ */
+//		'wpv-post-previous-link'	=> __( 'Post previous link', 'wpv-views' ),
+//		'wpv-post-next-link'		=> __( 'Post next link', 'wpv-views' ),
 	);
 	foreach ( $post_shortcodes as $post_shortcode_slug => $post_shortcode_title ) {
 		$group_data['fields'][ $post_shortcode_slug ] = array(
@@ -5551,6 +5985,7 @@ function wpv_generic_register_primary_shortcodes_dialog_groups() {
 		'user_lastname'		=> __( 'Last Name', 'wpv-views' ),
 		'nickname'			=> __( 'Nickname', 'wpv-views' ),
 		'display_name'		=> __( 'Display Name', 'wpv-views' ),
+        'profile_picture'	=> __( 'Profile Picture', 'wpv-views' ),
 		'user_nicename'		=> __( 'Nicename', 'wpv-views' ),
 		'description'		=> __( 'Description', 'wpv-views' ),
 		'yim'				=> __( 'Yahoo IM', 'wpv-views' ),
@@ -5613,7 +6048,7 @@ function wpv_generic_register_primary_shortcodes_dialog_groups() {
 	
 }
 
-add_action( 'init', 'wpv_generic_register_secondary_shortcodes_dialog_groups', 20 );
+add_action( 'init', 'wpv_generic_register_secondary_shortcodes_dialog_groups', 110 );
 
 function wpv_generic_register_secondary_shortcodes_dialog_groups() {
 	
@@ -5621,8 +6056,8 @@ function wpv_generic_register_secondary_shortcodes_dialog_groups() {
 	$nonce = '';
 	
 	// Add the wpv-theme-option to the Basic group
-	// Needs to happen here since frameworks are registred at init:10
-	
+	// Needs to happen here since auto-detected frameworks are registred at init:99
+
 	if (
 		apply_filters( 'wpv_filter_framework_has_valid_framework', false ) 
 		&& apply_filters( 'wpv_filter_framework_count_registered_keys', 0 ) > 0
@@ -5946,6 +6381,21 @@ function add_short_codes_to_js( $types, $editor ) {
 			$index += 1;
 		}
 	}
+	
+	if ( 
+		in_array( 'post', $types ) 
+		&& defined( 'CRED_FE_VERSION' )
+	) {
+		// Add the toolset-edit-post-link item, only when CRED is available
+		// @since 2.4.0
+		$editor->add_insert_shortcode_menu(
+			__( 'CRED edit-post link', 'wpv-views' ),
+			'toolset-edit-post-link',
+			__( 'CRED Editing', 'wpv-views' ),
+			"WPViews.shortcodes_gui.wpv_insert_popup('toolset-edit-post-link', '" . esc_js( __( 'CRED edit-post link', 'wpv-views' ) ) . "', {}, '" . $nonce . "', this )"
+		);
+		$index += 1;
+	}
 		
 	if ( in_array( 'post-fields-placeholder', $types ) ) {
 		$menu = __( 'Post field', 'wpv-views' );
@@ -6035,6 +6485,10 @@ function add_short_codes_to_js( $types, $editor ) {
 				'label'	=> __('Display Name', 'wpv-views'),
 				'code'	=> 'wpv-user field="display_name"'
 			),
+            'profile_picture'	=> array(
+                'label'	=> __( 'Profile picture', 'wpv-views' ),
+                'code'	=> 'wpv-user field="profile_picture"'
+            ),
 			'user_nicename'			=> array(
 				'label'	=> __('Nicename', 'wpv-views'),
 				'code'	=> 'wpv-user field="user_nicename"'
@@ -6081,6 +6535,19 @@ function add_short_codes_to_js( $types, $editor ) {
 			);
 			$index += 1;
 		}
+		
+		// Add the toolset-edit-user-link item, only when CRED is available
+		// @since 2.4.0
+		if ( defined( 'CRED_FE_VERSION' ) ) {
+			$editor->add_insert_shortcode_menu(
+				__( 'CRED edit-user link', 'wpv-views' ),
+				'toolset-edit-user-link',
+				__( 'CRED Editing', 'wpv-views' ),
+				"WPViews.shortcodes_gui.wpv_insert_popup('toolset-edit-user-link', '" . esc_js( __( 'CRED edit-user link', 'wpv-views' ) ) . "', {}, '" . $nonce . "', this )"
+			);
+			$index += 1;
+		}
+		
 	}
 
 	// Content Templates
@@ -6659,8 +7126,9 @@ add_shortcode('wpv-filter-search-box', 'wpv_filter_search_box');
 function wpv_filter_search_box($atts){
 	extract(
 		shortcode_atts( array(
-            'style' => '',
-            'class' => ''
+            'style'		=> '',
+            'class'		=> '',
+			'output'	=> 'legacy'
             ), $atts )
 	);
 
@@ -6674,6 +7142,9 @@ function wpv_filter_search_box($atts){
 	
 	if ( ! empty( $class ) ) {
 		$class = ' ' . esc_attr( $class ) . '';
+	}
+	if ( 'bootstrap' == $output ) {
+		$class .= ' form-control';
 	}
 	
 	$query_mode = 'posts';
@@ -6720,6 +7191,103 @@ function wpv_filter_search_box($atts){
 
 	return $return;
 }
+
+/**
+ * Add the wpv-filter-search-box shortcode to the shortcodes GUI API.
+ *
+ * @since 2.4.0
+ */
+
+add_filter( 'wpv_filter_wpv_shortcodes_gui_data', 'wpv_filter_search_box_shortcode_register_gui_data' );
+
+function wpv_filter_search_box_shortcode_register_gui_data( $views_shortcodes ) {
+	$views_shortcodes['wpv-filter-search-box'] = array(
+		'callback' => 'wpv_filter_search_box_shortcode_get_gui_data'
+	);
+	return $views_shortcodes;
+}
+
+function wpv_filter_search_box_shortcode_get_gui_data( $parameters = array(), $overrides = array() ) {
+	$data = array(
+		'attributes' => array(
+			'target-options' => array(
+				'label' => __( 'Filter options', 'wpv-views' ),
+				'header' => __( 'Filter options', 'wpv-views' ),
+				'fields' => array(
+					'value_where' => array(
+						'label'		=> __( 'Where to search', 'wpv-views'),
+						'type'		=> 'radio',
+						'default'	=> 'full_content',
+						'options'	=> array(
+							'full_content'	=> __( 'Post content and title' ),
+							'just_title'	=> __( 'Just post title', 'wpv-views' )
+						),
+						'description' => __( 'Adjust whether you want to search only in post titles or also in posts content.', 'wpv-views' ),
+					),
+					'value_label' => array(
+						'label'		=> __( 'Label for the search box', 'wpv-views' ),
+						'type'		=> 'text',
+						'placeholder'	=> __( 'Search', 'wpv-views' ),
+					),
+				),
+			),
+			'style-options' => array(
+				'label' => __( 'Style options', 'wpv-views' ),
+				'header' => __( 'Style options options', 'wpv-views' ),
+				'fields' => array(
+					'output' => array(
+						'label'		=> __( 'Output style', 'wpv-views' ),
+						'type'		=> 'radio',
+						'options'	=> array(
+							'legacy'	=> __( 'Raw search input', 'wpv-views' ),
+							'bootstrap'	=> __( 'Fully styled search input', 'wpv-views' )
+						),
+						'default_force'	=> 'bootstrap'
+					),
+					'class_style_combo' => array(
+						'label'		=> __( 'Element styling', 'wpv-views' ),
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'class' => array(
+								'pseudolabel'	=> __( 'Input classnames', 'wpv-views'),
+								'type'			=> 'text',
+								'description'	=> __( 'Use this to add your own classnames to the text input.', 'wpv-views' )
+							),
+							'style' => array(
+								'pseudolabel'	=> __( 'Input style', 'wpv-views'),
+								'type'			=> 'text',
+								'description'	=> __( 'Use this to add your own styling to the text input.', 'wpv-views' )
+							),
+						),
+					),
+				),
+			),
+		),
+	);
+	
+	$gui_action = isset( $_GET['gui_action'] ) ? sanitize_text_field( $_GET['gui_action'] ) : '';
+	
+	if ( 'insert' === $gui_action ) {
+		if ( 'true' === toolset_getget( 'has_shortcode' ) ) {
+			// If we are inserting (meaning, coming from the toolbar button), but a shortcode already exists
+			// then we need not to offer styling attributes, nor label inputs.
+			unset( $data['attributes']['style-options'] );
+			unset( $data['attributes']['target-options']['fields']['value_label'] );
+		}
+	} else if ( 'edit' === $gui_action ) {
+		// We need not to offer label inputs
+		unset( $data['attributes']['target-options']['fields']['value_label'] );
+	}
+	
+	
+	
+	$dialog_label = __( 'Text search filter', 'wpv-views' );
+	
+	$data['name']	= $dialog_label;
+	$data['label']	= $dialog_label;
+	
+	return $data;
+};
 
 
 /**
@@ -6871,27 +7439,32 @@ function wpv_shortcodes_get_wpv_for_each_data() {
                         'description' => __('The name of the custom field to display', 'wpv-views'),
                         'required' => true,
                     ),
-					'start' => array(
-						'label' => __( 'Index to start', 'wpv-views'),
-						'type' => 'number',
-						'default' => '1',
-						'description' => __('Start the iteration on this index. Defaults to 1.', 'wpv-views'),
-					),
-					'end' => array(
-						'label' => __( 'Index to end', 'wpv-views'),
-						'type' => 'number',
-						'default' => '',
-						'description' => __('End the iteration on this index. No value means all the way until the last index.', 'wpv-views'),
+					'iteration_boundaries'	=> array(
+						'label'		=> __( 'Iterator boundaries', 'wpv-views' ),
+						'type'		=> 'grouped',
+						'fields'	=> array(
+							'start'	=> array(
+								'pseudolabel'	=> __( 'Index to start', 'wpv-views'),
+								'type'			=> 'number',
+								'default'		=> '1',
+								'description'	=> __( 'Defaults to 1.', 'wpv-views' ),
+							),
+							'end'	=> array(
+								'pseudolabel'	=> __( 'Index to end', 'wpv-views'),
+								'type'			=> 'number',
+								'default'		=> '',
+								'description'	=> __( 'No value means all the way until the last index.', 'wpv-views' ),
+							),
+						)
 					),
 					'parse_shortcodes' => array(
-                        'type' => 'radio',
-                        'options' => array(
-                            'true' => __('Yes', 'wpv-views'),
-                            '' => __('No', 'wpv-views'),
+						'label'		=> __( 'Parse inner shortcodes', 'wpv-views' ),
+                        'type'		=> 'radio',
+                        'options'	=> array(
+                            'true'	=> __( 'Parse shortcodes inside the field values', 'wpv-views' ),
+                            ''		=> __( 'Do not parse shortcodes inside the field values', 'wpv-views' ),
                         ),
-                        'default' => '',
-                        'label' => __('Parse inner shortcodes', 'wpv-views'),
-                        'description' => __('When this option is "Yes", Views will parse all shortcodes inside field content.','wpv-views'),
+                        'default'	=> '',
                     ),
                 ),
 				'content' => array(

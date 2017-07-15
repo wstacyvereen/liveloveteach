@@ -107,7 +107,7 @@ function wpv_admin_archive_listing_page() {
 						<?php
 					}
 
-					wpv_admin_wordpress_archives_listing_table_by_name( $views_pre_query_data, $current_post_status );
+					wpv_admin_wordpress_archives_listing_table_by_name( $views_pre_query_data, $current_post_status, $search_term );
 				}
 			?>
         </div> <!-- .wpv-settings-container" -->
@@ -116,10 +116,23 @@ function wpv_admin_archive_listing_page() {
 }
 
 
-function wpv_admin_wordpress_archives_listing_table_by_name( $views_pre_query_data, $current_post_status ) {
+/**
+ * wpv_admin_wordpress_archives_listing_table_by_name
+ *
+ * Prepares the container of the WPA admin listing page arranged by name.
+ *
+ * @param array $views_pre_query_data Array with IDs of possible results and counts per post status.
+ *     See wpv_prepare_view_listing_query() for details.
+ * @param string $current_post_status Status of posts to display. Can be 'publish' or 'trash'.
+ * @param string $search_term Sanitized search term or empty string if no search is being performed.
+ *
+ * @since unknown
+ * @since 2.4 Added the $search_term parameter that contains the sanitized search term when a search is performed.
+ */
+function wpv_admin_wordpress_archives_listing_table_by_name( $views_pre_query_data, $current_post_status, $search_term ) {
 	?>
 		<div id="js-wpv-archive-tables-containter" class="wpv-archive-tables-containter">
-			<?php wpv_admin_archive_listing_name( $views_pre_query_data, $current_post_status ); ?>
+			<?php wpv_admin_archive_listing_name( $views_pre_query_data, $current_post_status, $search_term ); ?>
 		</div>
 	<?php
 	// Render dialog templates
@@ -138,7 +151,20 @@ function wpv_admin_wordpress_archives_listing_table_by_usage() {
 }
 
 
-function wpv_admin_archive_listing_name( $views_pre_query_data, $current_post_status ) {
+/**
+ * wpv_admin_archive_listing_name
+ *
+ * Displays the content of the WordPress Archives admin listing page: status, table and pagination.
+ *
+ * @param array $views_pre_query_data Array with IDs of possible results and counts per post status.
+ *     See wpv_prepare_view_listing_query() for details.
+ * @param string $current_post_status Status of posts to display. Can be 'publish' or 'trash'.
+ * @param string $search_term Sanitized search term or empty string if no search is being performed.
+ *
+ * @since unknown
+ * @since 2.4 Added the $search_term parameter that contains the sanitized search term when a search is performed.
+ */
+function wpv_admin_archive_listing_name( $views_pre_query_data, $current_post_status, $search_term ) {
 
 	global $WP_Views, $WPV_settings, $WPV_view_archive_loop;
 
@@ -162,16 +188,13 @@ function wpv_admin_archive_listing_name( $views_pre_query_data, $current_post_st
 		'post_status' => $current_post_status
 	);
 
-	
-	$search_string = wpv_getget( 's', '' );
-	$is_search = ( '' != $search_string );
+	$is_search = ! empty( $search_term );
+
+	// perform the search in WPA titles and decriptions and add post__in argument to $wpv_args.
 	if ( $is_search ) {
-		// perform the search in WPA titles and decriptions and add post__in argument to $wpv_args.
-		$wpv_args = wpv_modify_wpquery_for_search( $search_string, $wpv_args );
-		
-		$mod_url['s'] = urlencode( sanitize_text_field( $search_string ) );
+		$wpv_args = wpv_modify_wpquery_for_search( $search_term, $wpv_args );
+		$mod_url['s'] = urlencode( $search_term );
 	}
-	$search_term = urldecode( $search_string );
 
 	$items_per_page = (int) wpv_getget( 'items_per_page', 0 ); // 0 means "not set"
 	if ( 

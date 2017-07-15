@@ -280,7 +280,7 @@ class WPV_Date_Frontend_Filter {
 			switch ( $validate ) {
 				case 'year':
 					if ( 
-						checkdate( 1, 1, $value ) 
+						checkdate( 1, 1, intval( $value ) )
 						&& 1000 < intval( $value )
 						&& intval( $value ) < 9999
 					) {
@@ -288,7 +288,7 @@ class WPV_Date_Frontend_Filter {
 					}
 					break;
 				case 'month':
-					if ( checkdate( $value, 1, 2012 ) ) {
+					if ( checkdate( intval( $value ), 1, 2012 ) ) {
 						$return = true;
 					}
 					break;
@@ -301,7 +301,7 @@ class WPV_Date_Frontend_Filter {
 					}
 					break;
 				case 'day':
-					if ( checkdate( 1, $value, 2012 ) ) {
+					if ( checkdate( 1, intval( $value ), 2012 ) ) {
 						$return = true;
 					}
 					break;

@@ -1,12 +1,27 @@
 # Toolset Common Library
 
-# 2.3.1
+## 2.4.0
+- Updated Font Awesome library to 4.7.0
+- Included a mechanism to insert Bootstrap grid rows into selected Toolset editors.
+- Included the needed changes for providing Bootstrap compatible output to CRED frontend forms.
+- Improved the shared admin notices so they only get displayed for admins.
+- Included the Chosen library as alternative to select2.
+- Fixed an issue with a missing CRED datepicker stylesheet.
+- Fixed an issue with link elements of Visual Composer when used as editor in Content Templates.
+- Moved a CSS rule regarding jQuery UI datepicker, that was removed from Types.
+
+
+## 2.3.2
+- Fixed localization issue with date field and WordPress below 4.7
+- Most notices are now only shown to Administrators.
+
+## 2.3.1
 
 - Improved the styling for CRED file-related fields.
 - Fixed some compatibility issues with PHP 7.1
 - Fixed taxonomy suggestions on CRED forms.
 
-# 2.3.0
+## 2.3.0
 
 - Various fixes and adjustments for CRED 1.8.6
 - Adds callback methods for wpPointer object onOpen and onClose
@@ -20,6 +35,7 @@
 - toolsetcommon-144: Added Toolset_Admin_Notices_Manager
 - toolsetcommon-137: Make the toolset-forms classes autoloaded.
 - toolsetcommon-140: Improve a way to detect the status of WPML.
+- toolsetcommon-142: Use get_user_locale() instead of get_locale() if it's available.
 
 ## 2.2.10
 

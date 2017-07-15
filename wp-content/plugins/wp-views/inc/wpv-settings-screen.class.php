@@ -80,6 +80,8 @@ class WPV_Settings_Screen {
         // Register Settings JS
         wp_register_script( 'views-settings-js', WPV_URL . '/res/js/views_settings.js',		array( 'jquery', 'underscore', 'jquery-ui-dialog', 'jquery-ui-tabs', 'toolset-settings' ), WPV_VERSION, true );
 		$settings_script_texts = array(
+			'close'								=> __( 'Close', 'wpv-views' ),
+			'apply'								=> __( 'Apply', 'wpv-views' ),
 			'setting_saved'						=> __( 'Settings saved', 'wpv-views' ),
 			'hidde_fields_dialog_title'			=> __( 'Select hidden custom fields to show', 'wpv-views' ),
 			'hidden_fields_selected'			=> __( 'The following private custom fields are showing in the Views GUI:', 'wpv-views' ),

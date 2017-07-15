@@ -409,6 +409,11 @@ WPViews.ViewEditScreenInlineCT = function( $ ) {
 		var wpv_inline_editor_qt = quicktags( { id: 'wpv-ct-inline-editor-'+template_id, buttons: 'strong,em,link,block,del,ins,img,ul,ol,li,code,close' } );
 		WPV_Toolset.add_qt_editor_buttons( wpv_inline_editor_qt, WPV_Toolset.CodeMirror_instance['wpv_ct_inline_editor_' + template_id] );
 		
+		_.defer( function() {
+			// CSS Components compatibility
+			Toolset.hooks.doAction( 'toolset_text_editor_CodeMirror_init', 'wpv-ct-inline-editor-' + template_id );
+		});
+		
 		// Extra assets editors
 		WPV_Toolset.CodeMirror_instance["wpv_ct_assets_inline_css_editor_" + template_id] = icl_editor.codemirror( 'wpv-ct-assets-inline-css-editor-' + template_id, true, 'css' );
 		WPV_Toolset.CodeMirror_instance["wpv_ct_assets_inline_css_editor_" + template_id].setSize( "100%", 250 );
@@ -565,12 +570,9 @@ WPViews.ViewEditScreenInlineCT = function( $ ) {
 						console.log('Error, Content Template not found.');
 					} else {
 						$( '.js-wpv-inline-editor-container-' + template_id ).html( response );
-						if ( typeof cred_cred != 'undefined' ) {
-							cred_cred.posts();// this should be an event!!!
-						}
 						
-							self.init_inline_template( template_id );
-							
+						self.init_inline_template( template_id );
+						
 						thiz.prop( 'disabled', false );
 						arrow
 							.addClass( 'fa-caret-up' )
@@ -751,17 +753,17 @@ WPViews.ViewEditScreenInlineCT = function( $ ) {
 			},
 			buttons:[
 				{
+					class:	'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-assign-inline-content-template',
+					text:	wpv_inline_templates_i18n.dialog.assign.action,
+					click:	function() {
+
+					}
+				},
+				{
 					class:	'button-secondary',
 					text:	wpv_inline_templates_i18n.dialog.cancel,
 					click:	function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class:	'button-primary js-wpv-assign-inline-content-template',
-					text:	wpv_inline_templates_i18n.dialog.assign.action,
-					click:	function() {
-
 					}
 				}
 			]
@@ -788,16 +790,7 @@ WPViews.ViewEditScreenInlineCT = function( $ ) {
 			},
 			buttons:[
 				{
-					class:	'button-secondary',
-					text:	wpv_inline_templates_i18n.dialog.cancel,
-					click:	function() {
-						self.current_ct_container = null;
-						self.current_ct_id = 0;
-						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class:	'button-primary js-wpv-remove-template-from-view',
+					class:	'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-remove-template-from-view',
 					text:	wpv_inline_templates_i18n.dialog.unassign.action,
 					click:	function() {
 						var thiz = $( '.js-wpv-remove-template-from-view' ),
@@ -838,6 +831,15 @@ WPViews.ViewEditScreenInlineCT = function( $ ) {
 							spinnerContainer.remove();
 							thiz_dialog.dialog( "close" );
 						});
+					}
+				},
+				{
+					class:	'button-secondary',
+					text:	wpv_inline_templates_i18n.dialog.cancel,
+					click:	function() {
+						self.current_ct_container = null;
+						self.current_ct_id = 0;
+						$( this ).dialog( "close" );
 					}
 				}
 			]
@@ -896,6 +898,9 @@ WPViews.ViewEditScreenInlineCT = function( $ ) {
 	self.init_inline_template = function( template_id ) {
 		self.set_inline_content_template_editor( template_id )
 			.set_inline_content_template_events( template_id );
+		if ( typeof cred_cred != 'undefined' ) {
+			cred_cred.posts();// this should be an event!!!
+		}
 	};
 	
 	self.init = function() {

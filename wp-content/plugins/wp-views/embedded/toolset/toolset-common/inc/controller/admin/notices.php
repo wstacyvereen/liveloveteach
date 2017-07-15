@@ -315,6 +315,7 @@ class Toolset_Controller_Admin_Notices {
 		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
 		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Available() );
 		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Not_Active() );
+		$notice->add_condition( new Toolset_Condition_Theme_Avada_Not_Active_Or_Greater_Equal_5_0() );
 		Toolset_Admin_Notices_Manager::add_notice( $notice );
 
 		return $notice;

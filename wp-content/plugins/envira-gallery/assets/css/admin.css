@@ -550,7 +550,19 @@ body.post-type-envira div.wrap {
           text-align: center;
           margin: 10px 0 0 0; } }
 /* ==========================================================================
+   Gallery List
+   ========================================================================== */
+@media screen and (max-width: 782px) {
+  body.post-type-envira .wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.check-column) {
+    display: table-cell; } }
+/* ==========================================================================
    Whitelabeled
    ========================================================================== */
 body.envira-whitelabel #envira-header {
   height: 40px; }
+
+/* ==========================================================================
+   RTL
+   ========================================================================== */
+body.rtl.post-type-envira div.wrap a.page-title-action {
+  left: -235px; }

@@ -648,6 +648,16 @@
             border-radius: 4px;
 }
 
+/* apparently we need to override the skin background for various legacy themes */
+
+.envirabox-overlay {
+    &.overlay-base {
+        .envirabox-skin {
+            background: white;
+        }
+    }
+}
+
 .envirabox-opened {
     z-index: 988030;
 }

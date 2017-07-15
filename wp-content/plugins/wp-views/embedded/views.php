@@ -12,7 +12,7 @@ if ( defined( 'WPV_VERSION' ) ) {
     return; 
 }
 
-define( 'WPV_VERSION', '2.3.1' );
+define( 'WPV_VERSION', '2.4.0' );
 
 /**
 * Set constants
@@ -192,8 +192,11 @@ require WPV_PATH_EMBEDDED . '/inc/wpv-filter-post-types-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/wpv-filter-limit-embedded.php';
 
 /**
-* Frontend query filters
-*/
+ * Frontend query filters
+ *
+ * @since unknown
+ * @since 2.4.0 WIP Added the post type filter embedded side
+ */
 
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-author-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-category-embedded.php';
@@ -202,6 +205,7 @@ require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-id-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-meta-field-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-parent-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-post-relationship-embedded.php';
+require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-post-type-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-search-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-status-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-sticky-embedded.php';
@@ -212,6 +216,14 @@ require WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-sticky-embedded.php';
 
 require WPV_PATH_EMBEDDED . '/inc/WPML/wpv_wpml.php';
 WPV_WPML_Integration_Embedded::initialize();
+
+/**
+ * CRED integration
+ *
+ * @since 2.4.0
+ */
+require_once WPV_PATH_EMBEDDED . '/inc/third-party/wpv-compatibility-cred.class.php';
+WPV_Compatibility_CRED::initialize();
 
 /**
  * WooCommerce integration

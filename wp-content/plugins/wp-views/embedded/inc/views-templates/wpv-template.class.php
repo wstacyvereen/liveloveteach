@@ -500,6 +500,7 @@ class WPV_template{
 	 * and renders using the view_template if on exists
      *
      * @since unknown
+	 * @since 2.4.0 Added a listener to the content-template-id URL parameter to force a Content Template by ID
 	 */
     function the_content( $content ) {
         global $id, $post, $wp_query, $WPVDebug;
@@ -713,6 +714,14 @@ class WPV_template{
 		) {
 			if ( ! isset( $post->view_template_override_get ) ) {
 				$template_selected = $this->get_template_id( $_GET['view-template'] );
+				$post->view_template_override_get = true;
+			}
+		} else if ( 
+			isset( $_GET['content-template-id'] ) 
+			&& $_GET['content-template-id'] != ''
+		) {
+			if ( ! isset( $post->view_template_override_get ) ) {
+				$template_selected = (int) $_GET['content-template-id'];
 				$post->view_template_override_get = true;
 			}
 		} else if (

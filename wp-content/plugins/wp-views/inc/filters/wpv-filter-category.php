@@ -15,20 +15,25 @@ WPV_Taxonomy_Filter::on_load();
 *
 * Views Taxonomy Filter Class
 *
-* @since 1.7
+* @since 1.7.0
 * @since 1.12.1	Changes in the filter modes for the posts filter and the taxonomy filter
 * 		FROM PAGE becomes current_post_or_parent_post_view and tracks $WP_Views->get_current_page()
 * 		top_current_post tracks $WP_Views->get_top_current_page()
 * 		FROM PARENT VIEW becomes becomes current_taxonomy_view
-* @since 2.1	Added to WordPress Archives
-* @since 2.1	Include this file only when editing a View or WordPress Archive, or when doing AJAX
+* @since 2.1.0 Added to WordPress Archives
+* @since 2.1.0 Include this file only when editing a View or WordPress Archive, or when doing AJAX
+* @since 2.4.0 Include a custom search frontend filter
 */
 
 class WPV_Taxonomy_Filter {
 
     static function on_load() {
-        add_action( 'init', array( 'WPV_Taxonomy_Filter', 'init' ) );
-		add_action( 'admin_init', array( 'WPV_Taxonomy_Filter', 'admin_init' ) );
+        add_action( 'init',			array( 'WPV_Taxonomy_Filter', 'init' ) );
+		add_action( 'admin_init',	array( 'WPV_Taxonomy_Filter', 'admin_init' ) );
+		// Scripts
+		add_action( 'admin_enqueue_scripts', array( 'WPV_Taxonomy_Filter','admin_enqueue_scripts' ), 20 );
+		// Register custom search filter in dialog
+		add_filter( 'wpv_filter_wpv_register_form_filters_shortcodes', array( 'WPV_Taxonomy_Filter', 'wpv_custom_search_filter_shortcodes_post_taxonomy' ), 5 );
     }
 
     static function init() {
@@ -63,8 +68,6 @@ class WPV_Taxonomy_Filter {
 		// Update and delete
 		add_action( 'wp_ajax_wpv_filter_taxonomy_update',			array( 'WPV_Taxonomy_Filter', 'wpv_filter_taxonomy_update_callback' ) );
 		add_action( 'wp_ajax_wpv_filter_taxonomy_delete',			array( 'WPV_Taxonomy_Filter', 'wpv_filter_taxonomy_delete_callback' ) );
-		// Scripts
-		add_action( 'admin_enqueue_scripts',						array( 'WPV_Taxonomy_Filter','admin_enqueue_scripts' ), 20 );
 		// TODO This might not be needed here, maybe for summary filter
 		//add_action( 'wp_ajax_wpv_filter_taxonomy_sumary_update',	array( 'WPV_Taxonomy_Filter', 'wpv_filter_taxonomy_sumary_update_callback' ) );
 	}
@@ -665,7 +668,16 @@ class WPV_Taxonomy_Filter {
 				'taxonomy-' . $taxonomy . '-attribute-url',
 				'taxonomy-' . $taxonomy . '-attribute-url-format',
 				'taxonomy-' . $taxonomy . '-attribute-operator',
-				'taxonomy-' . $taxonomy . '-framework'
+				'taxonomy-' . $taxonomy . '-framework',
+				// Backwards compatibility: 
+				// those entries existed in the View settings up until 2.4.0
+				'filter_controls_field_name',
+				'filter_controls_mode',
+				'filter_controls_label',
+				'filter_controls_type',
+				'filter_controls_values',
+				'filter_controls_enable',
+				'filter_controls_param'
 			);
 			if ( 'category' == $taxonomy ) {
 				$to_delete[] = 'post_category';
@@ -675,19 +687,6 @@ class WPV_Taxonomy_Filter {
 			foreach ( $to_delete as $index ) {
 				if ( isset( $view_array[$index] ) ) {
 					unset( $view_array[$index] );
-				}
-			}
-			if ( isset( $view_array['filter_controls_field_name'] ) ) {
-				$splice = false;
-				foreach ( $view_array['filter_controls_field_name'] as $i => $tax ) {
-					if( strpos( $tax, $taxonomy ) !== false ) {
-						$splice = $i;
-					}
-				}
-				if ( $splice !== false ) {
-					foreach ( Editor_addon_parametric::$prm_db_fields as $dbf ) {
-						array_splice( $view_array[$dbf], $splice, 1 );
-					}
 				}
 			}
 		}
@@ -702,6 +701,75 @@ class WPV_Taxonomy_Filter {
 			'message'		=> __( 'Taxonomy filter deleted', 'wpv-views' )
 		);
 		wp_send_json_success( $data );
+	}
+	
+	/**
+	 * Register the wpv-control-post-taxonomy shortcode on the custom search frontend filters.
+	 *
+	 * @since 2.4.0
+	 */
+	
+	static function wpv_custom_search_filter_shortcodes_post_taxonomy( $shortcodes ) {
+		$items = array();
+		$taxonomies_valid = get_taxonomies( '', 'objects' );
+		$exclude_tax_slugs = array();
+		$exclude_tax_slugs = apply_filters( 'wpv_admin_exclude_tax_slugs', $exclude_tax_slugs );
+		foreach ( $taxonomies_valid as $taxonomy_slug => $taxonomy_data ) {
+			if ( in_array( $taxonomy_slug, $exclude_tax_slugs ) ) {
+				continue;
+			}
+			if ( ! $taxonomy_data->show_ui ) {
+				continue; // Only show taxonomies with show_ui set to TRUE
+			}
+			$items['post_taxonomy_' . $taxonomy_data->name] = array(
+				'name'			=> $taxonomy_data->label,
+				'present'		=> 'tax_' . $taxonomy_data->name . '_relationship',
+				'params'		=> array(
+					'attributes'	=> array(
+						'taxonomy'	=> $taxonomy_data->name
+					)
+				)
+			);
+		}
+		if ( count( $items ) > 0 ) {
+		
+			$shortcodes['wpv-control-post-taxonomy'] = array(
+				'query_type_target'				=> 'posts',
+				'query_filter_define_callback'	=> array( 'WPV_Taxonomy_Filter', 'query_filter_define_callback' ),
+				'custom_search_filter_group'	=> __( 'Taxonomy filters', 'wpv-views' ),
+				'custom_search_filter_items'	=> $items
+			);
+			
+		}
+		return $shortcodes;
+	}
+	
+	/**
+	 * Callback to create or modify the query filter after creating or editing the custom search shortcode.
+	 *
+	 * @param $view_id		int		The View ID
+	 * @param $shortcode		string	The affected shortcode, wpv-control-post-taxonomy
+	 * @param $attributes	array	The associative array of attributes for this shortcode
+	 * @param $attributes_raw array	The associative array of attributes for this shortcode, as collected from its dialog, before being filtered
+	 *
+	 * @uses wpv_action_wpv_save_item
+	 *
+	 * @since 2.4.0
+	 *
+	 * @todo the operator defaults to IN but on previous versions we had a setting for it when defining the shortcode...
+	 */
+	
+	static function query_filter_define_callback( $view_id, $shortcode, $attributes, $attributes_raw ) {
+		if ( ! isset( $attributes['url_param'] ) ) {
+			return;
+		}
+		$view_array = get_post_meta( $view_id, '_wpv_settings', true );
+		$view_array['tax_' . $attributes['taxonomy'] . '_relationship'] = 'FROM URL';
+		$view_array['taxonomy-' . $attributes['taxonomy'] . '-attribute-url'] = $attributes['url_param'];
+		$view_array['taxonomy-' . $attributes['taxonomy'] . '-attribute-url-format'] = array( 'slug' );
+		$view_array['taxonomy-' . $attributes['taxonomy'] . '-attribute-operator'] = isset( $attributes_raw['value_compare'] ) ? $attributes_raw['value_compare'] : 'IN';//$attributes['url_param'];
+		$result = update_post_meta( $view_id, '_wpv_settings', $view_array );
+		do_action( 'wpv_action_wpv_save_item', $view_id );
 	}
 	
 }

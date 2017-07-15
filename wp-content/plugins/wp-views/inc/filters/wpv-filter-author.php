@@ -27,8 +27,12 @@ WPV_Author_Filter::on_load();
 class WPV_Author_Filter {
 
     static function on_load() {
-        add_action( 'init', array( 'WPV_Author_Filter', 'init' ) );
-		add_action( 'admin_init', array( 'WPV_Author_Filter', 'admin_init' ) );
+        add_action( 'init',			array( 'WPV_Author_Filter', 'init' ) );
+		add_action( 'admin_init',	array( 'WPV_Author_Filter', 'admin_init' ) );
+		// Scripts
+		add_action( 'admin_enqueue_scripts', array( 'WPV_Author_Filter', 'admin_enqueue_scripts' ), 20 );
+		// Custom search shortcode GUI
+		//add_filter( 'wpv_filter_wpv_register_form_filters_shortcodes', array( 'WPV_Author_Filter', 'wpv_custom_search_filter_shortcodes_post_author' ) );
     }
 
     static function init() {
@@ -60,8 +64,6 @@ class WPV_Author_Filter {
 		// Sugest
 		add_action( 'wp_ajax_wpv_suggest_author',					array( 'WPV_Author_Filter', 'wpv_suggest_author' ) );
 		add_action( 'wp_ajax_nopriv_wpv_suggest_author',			array( 'WPV_Author_Filter', 'wpv_suggest_author' ) );
-		// Scripts
-		add_action( 'admin_enqueue_scripts',						array( 'WPV_Author_Filter', 'admin_enqueue_scripts' ), 20 );
 		// TODO This might not be needed here, maybe for summary filter
 		//add_action( 'wp_ajax_wpv_filter_author_sumary_update',	array( 'WPV_Author_Filter', 'wpv_filter_author_sumary_update_callback' ) );
 	}
@@ -584,6 +586,54 @@ class WPV_Author_Filter {
 		</ul>
 		<div class="filter-helper js-wpv-author-helper"></div>
 		<?php
+	}
+	
+	/**
+	 * Register the query filter by post author in the filters GUI.
+	 *
+	 * @since WIP 2.4.0
+	 */
+	
+	static function wpv_custom_search_filter_shortcodes_post_author( $form_filters_shortcodes ) {
+		$form_filters_shortcodes['wpv-control-post-author'] = array(
+			'query_type_target'				=> 'posts',
+			'query_filter_define_callback'	=> array( 'WPV_Author_Filter', 'query_filter_define_callback' ),
+			'custom_search_filter_group'	=> __( 'Post filters', 'wpv-views' ),
+			'custom_search_filter_items'	=> array(
+												'post_author'	=> array(
+													'name'			=> __( 'Post author', 'wpv-views' ),
+													'present'		=> 'author_mode',
+													'params'		=> array()
+												)
+			)
+		);
+		return $form_filters_shortcodes;
+	}
+	
+	/**
+	 * Callback to create or modify the query filter after creating or editing the custom search shortcode.
+	 *
+	 * @param $view_id		int		The View ID
+	 * @param $shortcode		string	The affected shortcode, wpv-control-post-author
+	 * @param $attributes	array	The associative array of attributes for this shortcode
+	 *
+	 * @uses wpv_action_wpv_save_item
+	 *
+	 * @since 2.4.0
+	 *
+	 * @todo adjust it so it can also set a type of username
+	 */
+	
+	static function query_filter_define_callback( $view_id, $shortcode, $attributes = array() ) {
+		if ( ! isset( $attributes['url_param'] ) ) {
+			return;
+		}
+		$view_settings = get_post_meta( $view_id, '_wpv_settings', true );
+		$view_settings['author_mode']		= array( 'by_url' );
+		$view_settings['author_url']		= $attributes['url_param'];
+		$view_settings['author_url_type']	= isset( $attributes['url_type'] ) ? $attributes['url_type'] : 'id';
+		$result = update_post_meta( $view_id, '_wpv_settings', $view_settings );
+		do_action( 'wpv_action_wpv_save_item', $view_id );
 	}
 
 }

@@ -103,21 +103,22 @@ WPViews.QueryFilters = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-filters-insert-filter',
+					text: wpv_filters_strings.add_filter_dialog.insert,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpv_filters_strings.add_filter_dialog.cancel,
 					click: function() {
 						$( this ).dialog( "close" );
 					}
-				},
-				{
-					class: 'button-primary js-filters-insert-filter',
-					text: wpv_filters_strings.add_filter_dialog.insert,
-					click: function() {
-
-					}
 				}
 			]
 		});
+		return self;
 	};
 	
 	// ---------------------------------
@@ -179,6 +180,7 @@ WPViews.QueryFilters = function( $ ) {
 			self.no_filters.hide();
 			self.add_filter_button.val( self.add_filter_button.data( 'nonempty' ) );
 		}
+		return self;
 	};
 	
 	self.open_filter_row = function( row ) {
@@ -506,12 +508,67 @@ WPViews.QueryFilters = function( $ ) {
 	});
 	
 	// ---------------------------------
+	// API for Query Filters
+	// ---------------------------------
+	
+	/**
+	 * Replace the query filters list on demand.
+	 *
+	 * @since 2.4.0
+	 */
+	
+	self.replace_filters_list = function( new_list ) {
+		$( '.js-filter-list' ).html( new_list );
+		
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-check-query-filter-list-existence' );
+		/**
+		* Clear the edit page save queue from query filter items, as the query filters list has been refreshed.
+		* Each query filter should add a callback to this action to restart its tracking data and eventually remove from the save queue.
+		*
+		* @since 2.4.0
+		*/
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-clear-query-filter-save-queue' );
+		return self;
+	}
+	
+	// ---------------------------------
+	// Hooks
+	// ---------------------------------
+	
+	self.init_hooks = function() {
+		
+		/**
+		* Refresh the query filters list existence.
+		*
+		* @since	2.4.0
+		*/
+		Toolset.hooks.addAction( 'wpv-action-wpv-edit-screen-check-query-filter-list-existence', self.filters_exist );
+		
+		/**
+		* Refresh the query filters list with whatever string gets passed to this action.
+		*
+		* @note		After refreshing the list, the action wpv-action-wpv-edit-screen-check-query-filter-list-existence will be fired.
+		* @note		After refreshing the list, the action wpv-action-wpv-edit-screen-clear-query-filter-save-queue will be fired.
+		* @since	2.4.0
+		*/
+		Toolset.hooks.addAction( 'wpv-action-wpv-edit-screen-replace-query-filter-list', self.replace_filters_list );
+		
+		return self;
+		
+	};
+	
+	// ---------------------------------
 	// Init
 	// ---------------------------------
 	
 	self.init = function() {
-		self.filters_exist();
-		self.init_dialogs();
+		// Fire init methods
+		self.init_hooks()
+			.init_dialogs();
+		
+		// Fire init actions
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-check-query-filter-list-existence' );
+		
 	};
 	
 	self.init();

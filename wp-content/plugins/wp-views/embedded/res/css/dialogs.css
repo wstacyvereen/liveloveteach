@@ -360,6 +360,12 @@
 		display: table-row;
 		width: 100%;
 	}
+
+	.wpv-dialog-pagination-wizard-item .disabled {
+		color: #000;
+		opacity: .3;
+		filter: alpha(opacity = 30);
+	}
 	
 	.wpv-dialog-pagination-wizard-data {
 		display: table-cell;
@@ -374,10 +380,6 @@
 	.wpv-dialog-pagination-wizard-item-extra {
 		display: none;
 	}
-	
-		.wpv-dialog-pagination-wizard-item-extra input[type="checkbox"] {
-			margin-right: 0;
-		}
 	
 	div.wpv-dialog-pagination-wizard-item-extra {
 		margin: 5px 10px 0 0;
@@ -433,10 +435,6 @@
 		}
 		.wpv-dialog-pagination-wizard-previewly .next-previous-controls a:first-child {
 			float: left;
-		}
-		
-		.wpv-pagination-wizard-wrapper p {
-			margin: 0 0 1em;
 		}
 
 /* wpv-dialog-layout-wizard END*/
@@ -605,6 +603,14 @@
 
 }
 
+.toolset-shortcode-gui-dialog-container.wpv-shortcode-gui-dialog-container {
+	position: relative;
+}
+
+	.wpv-shortcode-gui-dialog-container .wpv-shortcode-gui-dialog-hijack-content {
+		height: 200px;
+	}
+
 .toolset-shortcode-gui-dialog-container .ui-tabs-vertical {
     display: block;
     width: 100%;
@@ -617,6 +623,43 @@
 .toolset-shortcode-gui-dialog-container.ui-dialog-content {
 	padding: 0;
 }
+
+.toolset-shortcode-gui-dialog-container.wpv-shortcode-gui-dialog-container .wpv-shortcode-gui-dialog-container-overlay {
+	position: absolute;
+    top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+    z-index: 100;
+	border: solid 1px #eed3d7;
+	overflow: hidden;
+}
+	.wpv-shortcode-gui-dialog-container-overlay .wpv-transparency {
+		width: 100%;
+		height: 100%;
+		background: #fff;
+		opacity: 0.85;
+	}
+
+	.wpv-shortcode-gui-dialog-container-overlay .icon-lock {
+		position: absolute;
+		top: 0;
+		right: 0;
+		font-size: 2em;
+		padding: 5px 15px;
+		color: #b94a48;
+		background: #f2dede;
+		border-left: solid 1px #eed3d7;
+		border-bottom: solid 1px #eed3d7;
+		border-radius: 0 0 0 4px;
+	}
+	
+	.wpv-shortcode-gui-dialog-container-overlay .toolset-alert {
+		position: absolute;
+		top: 35px;
+		left: 25px;
+		right: 25px;
+	}
 
 .toolset-shortcode-gui-dialog-container.ui-dialog-content .wpv-dialog {
 	padding: 16px;
@@ -735,15 +778,46 @@
 
 .toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-attribute-wrapper,
 .toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-content-wrapper {
+	position: relative;
     /*padding-bottom: 1em;*/
 }
 
+.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-dialog-item-grouped {
+	overflow: hidden;
+	clear: left;
+	margin: 0;
+	padding: 0;
+}
+
+	.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-dialog-item-grouped > li {
+		display: block;
+		float: left;
+		margin: 0;
+		padding: 0;
+	}
+	
+	.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-attribute-group .wpv-shortcode-gui-attribute-wrapper {
+		margin: 0;
+		padding: 0 10px 0 0;
+	}
+	
+		.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-dialog-item-grouped > li:last-child .wpv-shortcode-gui-attribute-wrapper {
+			padding-right: 0;
+		}
+
 .toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-attribute-wrapper h3,
+.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-attribute-group h3,
 .toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-content-wrapper h3 {
 	color: #333;
 	background: #ededed;
 	padding: 1px 5px;
 	font-size: 13px;
+}
+
+.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-attribute-wrapper span.wpv-shortcode-gui-attribute-pseudolabel, 
+.toolset-shortcode-gui-dialog-container .wpv-shortcode-gui-attribute-group span.wpv-shortcode-gui-attribute-pseudolabel {
+	display: block;
+	margin: 3px 5px;
 }
 
 .toolset-shortcode-gui-dialog-container .tab-metadata {
@@ -801,9 +875,21 @@
 	background: none repeat scroll 0 0 #e9e9e9;
 }
 
-.ui-dialog-buttonpane .ui-button.toolset-shortcode-gui-dialog-button-close,
-.ui-dialog-buttonpane .ui-button.toolset-shortcode-gui-dialog-button-back {
+.wpv-shortcode-gui-dialog-container + .ui-dialog-buttonpane .ui-dialog-buttonset {
+	float: none;
+	overflow: hidden;
+	padding: 2px 0;
+}
+
+.wpv-shortcode-gui-dialog-container + .ui-dialog-buttonpane button {
+	float: left;
 	margin-right: 10px;
+}
+
+.wpv-shortcode-gui-dialog-container + .ui-dialog-buttonpane .toolset-shortcode-gui-dialog-button-align-right {
+	float: right;
+	margin-left: 10px;
+	margin-right: 0
 }
 
 /* Compat with old pro_dropdown_2.css files START */

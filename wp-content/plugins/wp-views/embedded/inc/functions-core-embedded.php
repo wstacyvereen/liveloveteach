@@ -204,7 +204,8 @@ function wpv_update_dissident_posts_from_template( $template_id, $content_type, 
  *    $return['error'] = This view does not allow parametric searches
  *
  * @since 1.6.0
- * @since 2.3.0 Add support for recognizing filter shorcodes using single quotes for attribute values.
+ * @since 2.3.0 Added support for recognizing filter shorcodes using single quotes for attribute values.
+ * @since 2.4.0 Added support for recognizing the new wpv-control-post-taxonomy, wpv-control-postmeta and wpv-control-post-relationship shortcodes.
  */
 function wpv_count_filter_controls( $view_settings ) {
 	
@@ -225,6 +226,9 @@ function wpv_count_filter_controls( $view_settings ) {
 	$filter_controls_by_tag = substr_count( $view_settings['filter_meta_html'], '[wpv-control ' );
 	$filter_controls_by_tag += substr_count( $view_settings['filter_meta_html'], '[wpv-control-set ' );
 	$filter_controls_by_tag += substr_count( $view_settings['filter_meta_html'], '[wpv-filter-search-box' );
+	$filter_controls_by_tag += substr_count( $view_settings['filter_meta_html'], '[wpv-control-post-taxonomy ' );
+	$filter_controls_by_tag += substr_count( $view_settings['filter_meta_html'], '[wpv-control-postmeta ' );
+	$filter_controls_by_tag += substr_count( $view_settings['filter_meta_html'], '[wpv-control-post-relationship ' );
 	
 	if ( ! isset( $view_settings['filter_controls_mode'] ) ) {
 		$view_settings['filter_controls_mode'] = array();
@@ -237,7 +241,10 @@ function wpv_count_filter_controls( $view_settings ) {
 	foreach ( $view_settings as $v_key => $v_val ) {
 		if ( $v_key == 'post_relationship_mode' && is_array( $v_val ) && in_array( 'url_parameter', $v_val ) ) {
 			$return['pr'] = 1;
-			if ( substr_count( $view_settings['filter_meta_html'], '[wpv-control-set ' ) !== 1 ) {
+			if ( 
+				substr_count( $view_settings['filter_meta_html'], '[wpv-control-set ' ) !== 1 
+				&& substr_count( $view_settings['filter_meta_html'], '[wpv-control-post-relationship ' ) !== 1
+			) {
 				$return['missing'][] = array(
 					'type' => 'rel',
 					'name' => __( 'post relationship', 'wpv-views' )
@@ -439,6 +446,56 @@ function wpv_types_get_field_real_slug( $field_name, $field_type = 'cf' ) {
         
     }
 	return $real_slug;
+}
+
+/**
+ * Get the whole Types data attibutes for a field, given its slug.
+ *
+ * @param $field_name	string	The field slug
+ * @param $domain		string The field domain, can be 'postmeta'|'cf', ' termmeta'|'tf', or 'usermeta'|'uf'
+ *
+ * @return array
+ *
+ * @note This should deprecate the usage of wpv_types_get_field_type, wpv_types_get_field_name, wpv_types_get_field_real_slug, wpv_is_types_custom_field
+ *
+ * @since 2.4.0
+ */
+
+function wpv_types_get_field_data( $field_name, $domain = 'postmeta' ) {
+	$data = array();
+	switch ( $domain ) {
+		case 'tf':
+		case 'termmeta':
+			$option_slug = 'wpcf-termmeta';
+			break;
+		case 'uf':
+		case 'usermeta':
+			$option_slug = 'wpcf-usermeta';
+			break;
+		case 'cf':
+		case 'postmeta':
+		default:
+			$option_slug = 'wpcf-fields';
+			break;
+	}
+	if ( ! empty( $field_name ) ) {
+		$opt = get_option( $option_slug, array() );
+		if ( 
+			$opt 
+			&& ! empty( $opt ) 
+		) {
+			if ( strpos( $field_name, 'wpcf-' ) === 0 ) {
+				$field_name = substr( $field_name, 5 );
+			}
+			if ( 
+				isset( $opt[ $field_name ] ) 
+				&& is_array( $opt[ $field_name ] ) 
+			) {
+				$data = $opt[ $field_name ];
+			}
+		}
+	}
+	return $data;
 }
 
 /**

@@ -396,6 +396,12 @@ WPViews.CTEditScreen = function( $ ) {
                         originalValue(_.toArray(acceptedValue));
                     } else {
                         originalValue(acceptedValue);
+                        // For the case of an escaped accepted value that is equal to the original value, we need to trigger
+                        // the "valueHasMutated" event for the subscribers to be notified as it won't be triggered by itself.
+                        // This is particularly useful when the escaped CT title is the same as its original value.
+                        if ( originalValue() === acceptedValue ) {
+                            originalValue.valueHasMutated();
+                        }
                     }
                 });
 
@@ -475,8 +481,13 @@ WPViews.CTEditScreen = function( $ ) {
 
             var acceptedValue = vm[ propertyName + 'Accepted' ]();
             var originalValue = vm[ propertyName + 'Original' ]();
+            var forcePropertyChanged = vm.hasOwnProperty( propertyName + 'ForcePropertyChanged' ) ? vm[ propertyName + 'ForcePropertyChanged' ]() : false;
 
-            if( !isEqual(acceptedValue, originalValue) ) {
+            if( ! isEqual( acceptedValue, originalValue ) || forcePropertyChanged ) {
+                // If we forced a property change event, we need to reset the flag.
+                if ( forcePropertyChanged ) {
+                    vm[ propertyName + 'ForcePropertyChanged' ]( false );
+                }
                 // Values are different, add property name to vm.changedProperties() if it's not already there.
                 if (!_.contains(vm.changedProperties(), propertyName)) {
                     vm.log("vm.propertyChange: property " + propertyName + " has changed (for the first time)", acceptedValue);
@@ -603,6 +614,8 @@ WPViews.CTEditScreen = function( $ ) {
         vm.titleAccepted = ko.observable(ct_data.title);
         vm.titleAccepted.subscribe(_.partial(vm.propertyChange, 'title' ));
 
+        vm.titleForcePropertyChanged = ko.observable( false );
+
         vm.titleWasLastInputEscaped = ko.observable(true);
         vm.titleLastInput = ko.observable(null);
 
@@ -619,7 +632,14 @@ WPViews.CTEditScreen = function( $ ) {
 				var titleEscaped = newTitle.replace( /'/gi, '' );
                 titleEscaped = WPV_Toolset.Utils._strip_tags_and_preserve_text(_.unescape(titleEscaped));
                 vm.titleWasLastInputEscaped(titleEscaped != newTitle);
-                vm.titleAccepted(titleEscaped);
+                if ( vm.titleAccepted() !== titleEscaped ) {
+                    vm.titleForcePropertyChanged( false );
+                    vm.titleAccepted( titleEscaped );
+                }
+                else {
+                    vm.titleForcePropertyChanged( true );
+                    vm.titleAccepted.valueHasMutated();
+                }
             }
         });
 
@@ -2263,15 +2283,11 @@ WPViews.CTEditScreen = function( $ ) {
     /**
      * Interoperation with other Toolset plugins.
      *
-     * Currently used to ensure CRED button will work properly.
-     *
      * @since 1.9
+	 * @since 2.4.0 Removed the CRED buttons initialization as CRED itself manages that
      */
     self.toolset_compatibility = function() {
-        // CRED plugin
-        if ( typeof cred_cred != 'undefined' ) {
-            cred_cred.posts();
-        }
+        
     };
 
 

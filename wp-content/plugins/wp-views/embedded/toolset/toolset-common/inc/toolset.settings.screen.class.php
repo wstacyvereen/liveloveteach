@@ -322,7 +322,7 @@ if ( ! class_exists( 'Toolset_Settings_Screen', false ) ) {
 
 			$sections['bootstrap-settings'] = array(
 				'slug'		=> 'bootstrap-settings',
-				'title'		=> __( 'Bootstrap Layouts', 'wpv-views' ),
+				'title'		=> __( 'Bootstrap loading', 'wpv-views' ),
 				'content'	=> $section_content
 			);
 			return $sections;

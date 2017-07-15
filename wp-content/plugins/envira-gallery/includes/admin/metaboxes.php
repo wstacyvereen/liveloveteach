@@ -59,6 +59,8 @@ class Envira_Gallery_Metaboxes {
             add_action( 'admin_notices', array( $this, 'notice_missing_extensions' ) );
         }
 		add_action( 'admin_enqueue_scripts', array( $this, 'fix_plugin_js_conflicts' ), 100 );
+        add_action( 'wp_print_scripts', array( $this, 'fix_plugin_js_conflicts' ), 100 );
+        
         // Scripts and styles
         add_action( 'admin_enqueue_scripts', array( $this, 'styles' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ) );
@@ -244,16 +246,6 @@ class Envira_Gallery_Metaboxes {
             return;
         }
 
-
-
-function wp_body_classes( $classes ) {
-    $classes[] = 'class-name';
-      
-    return $classes;
-}
-
-
-
         // Bail if we're not on an editing screen.
         if ( 'post' !== $screen->base ) {
             return;
@@ -366,15 +358,23 @@ function wp_body_classes( $classes ) {
         global $id, $post;
 
         // Get current screen.
+        
+        if ( ! function_exists( 'get_current_screen' ) ) {
+            return;
+        }
+
         $screen = get_current_screen();
 
         // Bail if we're not on the Envira Post Type screen.
         if ( 'envira' !== $screen->post_type ) {
             return;
         }
-        wp_dequeue_style( 'thrive-theme-options'  );
+
+        wp_dequeue_style ( 'thrive-theme-options'  );
 		wp_dequeue_script( 'thrive-theme-options' );
 		wp_dequeue_script( 'ngg-igw' );
+        wp_dequeue_script( 'yoast_ga_admin' ); /* Yoast Clicky Plugin */
+        
 
 	}
     /**
@@ -469,7 +469,9 @@ function wp_body_classes( $classes ) {
         // Preview Metabox
         // Displays the images to be displayed when using an External Gallery Type
         // In the future, this could include a 'live' preview of the gallery theme options etc.
-        add_meta_box( 'envira-gallery-preview', __( 'Envira Gallery Preview', 'envira-gallery' ), array( $this, 'meta_box_preview_callback' ), 'envira', 'normal', 'high' );
+        
+        // Update: This is only used for Instagram, so if that addon isn't installed, don't bother
+        // add_meta_box( 'envira-gallery-preview', __( 'Envira Gallery Preview', 'envira-gallery' ), array( $this, 'meta_box_preview_callback' ), 'envira', 'normal', 'high' );
 
         // Display the Gallery Code metabox if we're editing an existing Gallery
         if ( $post->post_status != 'auto-draft' ) {

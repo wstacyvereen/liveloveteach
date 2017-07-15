@@ -1095,6 +1095,9 @@
 			type      = coming.type;
 			scrolling = coming.scrolling;
 
+			console.log (coming);
+			console.log (scrolling);
+
 			$.extend(F, {
 				wrap  : current.wrap,
 				skin  : current.skin,
@@ -1159,6 +1162,8 @@
 			} else {
 				current.inner.css('overflow', scrolling === 'yes' ? 'scroll' : (scrolling === 'no' ? 'hidden' : scrolling));
 			}
+
+			console.log (current.inner.css('overflow'));
 
 			// Set initial dimensions and start position
 			F._setDimension();
@@ -1308,7 +1313,7 @@
 			maxWidth_  = viewport.w - wMargin;
 			maxHeight_ = viewport.h - hMargin;
 
-			if (current.aspectRatio) {
+			if ( current.aspectRatio ) {
 				if (width > maxWidth) {
 					width  = maxWidth;
 					height = getScalar(width / ratio);
@@ -1339,6 +1344,12 @@
 				}
 
 				height = Math.max(minHeight, Math.min(height, maxHeight));
+			}
+
+			// Maximize Third Party Hosted Videos
+			if (current.enviraVideoFitToView && current.type === 'iframe') {
+				width = maxWidth;
+				height = maxHeight;
 			}
 
 			// Try to fit inside viewport (including the title)

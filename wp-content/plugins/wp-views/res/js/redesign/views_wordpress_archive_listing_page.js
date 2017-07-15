@@ -963,17 +963,17 @@ WPViews.WPAListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-create-new-wpa',
+					text: wpa_listing_texts.dialog_create_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpa_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-create-new-wpa',
-					text: wpa_listing_texts.dialog_create_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -997,17 +997,17 @@ WPViews.WPAListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-remove-wpa-permanent',
+					text: wpa_listing_texts.dialog_delete_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpa_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-remove-wpa-permanent',
-					text: wpa_listing_texts.dialog_delete_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -1038,17 +1038,17 @@ WPViews.WPAListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-add-wp-archive-for-loop',
+					text: wpa_listing_texts.dialog_create_wpa_for_archive_loop_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpa_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-add-wp-archive-for-loop',
-					text: wpa_listing_texts.dialog_create_wpa_for_archive_loop_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -1073,17 +1073,17 @@ WPViews.WPAListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-change-wpa-for-archive-loop',
+					text: wpa_listing_texts.dialog_change_wpa_for_archive_loop_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpa_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-change-wpa-for-archive-loop',
-					text: wpa_listing_texts.dialog_change_wpa_for_archive_loop_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -1109,17 +1109,17 @@ WPViews.WPAListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-bulk-trash-wpa-confirm',
+					text: wpa_listing_texts.dialog_bulk_trash_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpa_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-bulk-trash-wpa-confirm',
-					text: wpa_listing_texts.dialog_bulk_trash_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -1143,17 +1143,17 @@ WPViews.WPAListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-bulk-remove-wpa-permanent',
+					text: wpa_listing_texts.dialog_delete_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpa_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-bulk-remove-wpa-permanent',
-					text: wpa_listing_texts.dialog_delete_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -1176,18 +1176,18 @@ WPViews.WPAListingScreen = function( $ ) {
                 self.bulk_deleting_ids = [];
             },
             buttons:[
+				{
+                    class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-bulk-remove-wpa-permanent',
+                    text: wpa_listing_texts.dialog_delete_action,
+                    click: function() {
+
+                    }
+                },
                 {
                     class: 'button-secondary',
                     text: wpa_listing_texts.dialog_cancel,
                     click: function() {
                         $( this ).dialog( "close" );
-                    }
-                },
-                {
-                    class: 'button-primary js-wpv-bulk-remove-wpa-permanent',
-                    text: wpa_listing_texts.dialog_delete_action,
-                    click: function() {
-
                     }
                 }
             ]

@@ -1514,7 +1514,6 @@ class WPV_Export_Import_Embedded {
 						do_action( 'wpv_action_wpv_register_wpml_strings', $view['post_content'], $idflag );
 					}
 					if ( isset( $meta['_wpv_settings'] ) && isset( $meta['_wpv_settings']['filter_meta_html'] ) ) {
-						wpv_add_controls_labels_to_translation( $meta['_wpv_settings']['filter_meta_html'], $idflag );
 						do_action( 'wpv_action_wpv_register_wpml_strings', $meta['_wpv_settings']['filter_meta_html'], $idflag );
 					}
 					if ( isset( $meta['_wpv_layout_settings'] ) && isset( $meta['_wpv_layout_settings']['layout_meta_html'] ) ) {

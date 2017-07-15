@@ -91,7 +91,7 @@ function wpv_filter_url_check_js() {
 		'post_tag', 'post_type', 'posts', 'posts_per_archive_page', 'posts_per_page', 'preview', 'robots', 's', 'search',
 		'second', 'sentence', 'showposts', 'static', 'subpost', 'subpost_id', 'tag', 'tag__and', 'tag__in', 'tag__not_in',
 		'tag_id', 'tag_slug__and', 'tag_slug__in', 'taxonomy', 'tb', 'term', 'theme', 'type', 'w', 'withcomments', 'withoutcomments',
-		'year '
+		'year'
 	);
 
 	$toolset_reserved_words = array(
@@ -99,7 +99,8 @@ function wpv_filter_url_check_js() {
 		'wpv_sort_orderby', 'wpv_sort_order', 'wpv_sort_orderby_as', 'wpv_sort_orderby_second', 'wpv_sort_order_second',
 		'wpv_paged', 'wpv_paged_preload_reach', 
 		'wpv_view_count', 'wpv_filter_submit', 
-		'wpv_post_search', 'wpv_taxonomy_search'
+		'wpv_post_search', 'wpv_taxonomy_search', 
+		'wpv_error'
 	);
 	$toolset_reserved_words = apply_filters('wpv_toolset_reserved_words', $toolset_reserved_words);
 	

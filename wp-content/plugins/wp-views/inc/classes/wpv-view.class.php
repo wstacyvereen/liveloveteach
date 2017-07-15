@@ -163,7 +163,6 @@ class WPV_View extends WPV_View_Embedded {
         $value = $this->_validate_filter_meta_html($value);
         if( $this->filter_meta_html != $value ) {
             $this->set_view_setting( WPV_View_Embedded::VIEW_SETTINS_FILTER_META_HTML, $value );
-            wpv_add_controls_labels_to_translation( $value, $this->id );
 			/**
 			 * Fires once the value for the Filter editor for a View has been updated,
 			 * but before it has been saved.

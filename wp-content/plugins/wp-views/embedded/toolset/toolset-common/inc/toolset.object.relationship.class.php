@@ -259,6 +259,10 @@ if ( ! class_exists( 'WPV_wpcf_switch_post_from_attr_id', false ) ) {
 							, 'wpv-views'
 						);
 
+						// prevents PHP Warning for property assigned to empty $post value
+						// stdClass arg prevents get_obejct_vars in the constructor and the foreach looping through those vars
+						// to throw type error https://core.trac.wordpress.org/browser/tags/4.7.3/src/wp-includes/class-wp-post.php#L240
+						$post = new WP_Post( new stdClass() );
 						$post->post_title = $post->post_content = $post->post_excerpt = $msg_post_does_not_exists;
 
 						return;

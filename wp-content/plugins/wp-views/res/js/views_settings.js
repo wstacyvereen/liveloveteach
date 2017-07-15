@@ -44,17 +44,17 @@ WPViews.ViewsSettingsScreen = function( $ ) {
 			},
 			buttons:[
 				{
-					class: 'button-secondary',
-					text: "Close",
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-hidden-custom-fields-apply',
+					text: wpv_settings_texts.apply,
 					click: function() {
-						$( this ).dialog( "close" );
+						self.hidden_custom_fields_apply();
 					}
 				},
 				{
-					class: 'button-primary js-wpv-hidden-custom-fields-apply',
-					text: "Apply",
+					class: 'button-secondary',
+					text: wpv_settings_texts.close,
 					click: function() {
-						self.hidden_custom_fields_apply();
+						$( this ).dialog( "close" );
 					}
 				}
 			]

@@ -257,9 +257,16 @@ class Envira_Gallery_Shortcode {
 		// Allow the data to be filtered before it is stored and used to create the gallery output.
 		$data = apply_filters( 'envira_gallery_pre_data', $data, $gallery_id );
 
+		$password_form = apply_filters( 'envira_gallery_pwd_form', false, $data, $gallery_id );
+
 		// If there is no data to output or the gallery is inactive, do nothing.
 		if ( ! $data || empty( $data['gallery'] ) || isset( $data['status'] ) && 'inactive' == $data['status'] && ! is_preview() ) {
 			return;
+		}
+
+		if ( $password_form ) {
+			// Return the gallery HTML.
+			return apply_filters( 'envira_gallery_output', $password_form, $data );
 		}
 
 		$this->gallery_data = $data;
@@ -513,10 +520,10 @@ class Envira_Gallery_Shortcode {
 		if ( $this->get_config( 'columns', $data ) == 0 ) {
 			$caption_array = array();
 			if ( $this->get_config( 'additional_copy_automatic_title', $data ) && isset( $item['title'] ) ) {
-				$caption_array[] = esc_attr( $item['title'] );
+				$caption_array[] = strip_tags( htmlspecialchars( $item['title'] ) );
 			}
 			if ( $this->get_config( 'additional_copy_automatic_caption', $data ) && isset( $item['caption'] ) ) {
-				$caption_array[] = str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', esc_attr( $item['caption'] ) );
+				$caption_array[] = str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', strip_tags( esc_attr( $item['caption'] ) ) );
 			}
 			$caption = implode(' - ', $caption_array);
 		} else if ( $this->get_config( 'columns', $data ) > 0 ) {
@@ -526,7 +533,7 @@ class Envira_Gallery_Shortcode {
 				// don't display the caption, because the gallery theme will take care of this
 				$caption = false;
 			} else {
-				$caption = isset( $item['caption'] ) ? do_shortcode( str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', esc_attr( $item['caption'] ) ) ) : false;
+				$caption = isset( $item['caption'] ) ? do_shortcode( str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', strip_tags( esc_attr( $item['caption'] ) ) ) ) : false;
 			}
 		} else {
 			$caption = false;
@@ -534,20 +541,19 @@ class Envira_Gallery_Shortcode {
 
 		// Show caption BUT if the user has overrided with the title, show that instead
 		if ( !$this->get_config( 'lightbox_title_caption', $data ) || $this->get_config( 'lightbox_title_caption', $data ) != 'title' ) {
-			$lightbox_caption = isset( $item['caption'] ) ? do_shortcode( str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', esc_attr( $item['caption'] ) ) ) : false;
+			$lightbox_caption = isset( $item['caption'] ) ? do_shortcode( str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', strip_tags( htmlspecialchars( $item['caption'] ) ) ) ) : false;
 		} else {
-			$lightbox_caption = isset( $item['title'] ) ? do_shortcode( str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', esc_attr( $item['title'] ) ) ) : false;
+			$lightbox_caption = isset( $item['title'] ) ? do_shortcode( str_replace( array("\r\n","\r","\n","\\r","\\n","\\r\\n"), '<br />', strip_tags( htmlspecialchars( $item['title'] ) ) ) ) : false;
 		}
 		// Allow changes to lightbox caption
 		$lightbox_caption = apply_filters( 'envira_gallery_output_lightbox_caption', $lightbox_caption, $data, $id, $item, $i );
 		// Cap the length of the lightbox caption for light/dark themes
-		if ( $this->get_config( 'lightbox_theme', $data ) == 'base_dark' || $this->get_config( 'lightbox_theme', $data ) == 'light_dark' ) {
+		if ( $this->get_config( 'lightbox_theme', $data ) == 'base_dark' || $this->get_config( 'lightbox_theme', $data ) == 'base_light' ) {
 			$lightbox_caption_limit = apply_filters( 'envira_gallery_output_lightbox_caption_limit', 100, $data, $id, $item, $i );
 			if ( strlen($lightbox_caption) > $lightbox_caption_limit ) {
 				$lightbox_caption = substr($lightbox_caption, 0, strrpos(substr($lightbox_caption, 0, $lightbox_caption_limit), ' ')) . '...';
 			}
 		}
-
 
 		$envira_gallery_class 	= 'envira-gallery-' . sanitize_html_class( $data['id'] );
 
@@ -566,13 +572,9 @@ class Envira_Gallery_Shortcode {
 			}
 		}
 
-		if ( !$external_link_array ) { // dynamic gallery isn't happening, proceed
-
-			// If there is an instagram link and the user has chosen to link to instagram, override the $link
-			if ( ! empty( $item['instagram_link'] ) ) {
-				$item['link'] = $item['instagram_link'];
-			}
-
+		// dynamic gallery isn't happening and there's an instagram_link, override
+		if ( !$external_link_array && ! empty( $item['instagram_link'] ) ) {
+			$item['link'] = $item['instagram_link'];
 		}
 
 		$target = ! empty( $item['target'] ) ? 'target="' . $item['target'] . '"' : false;
@@ -591,7 +593,7 @@ class Envira_Gallery_Shortcode {
 		}
 
 		// Filter the ability to create a link
-		$create_link = apply_filters( 'envira_gallery_create_link', true, $data, $id, $item, $i, $this->is_mobile );
+		$create_link = apply_filters( 'envira_gallery_create_link', $create_link, $data, $id, $item, $i, $this->is_mobile );
 
 		// Schema.org microdata ( itemprop, etc. ) interferes with Google+ Sharing... so we are adding this via filter rather than hardcoding
 		$schema_microdata = apply_filters( 'envira_gallery_output_schema_microdata_itemprop_contenturl', 'itemprop="contentUrl"', $data, $id, $item, $i );
@@ -603,8 +605,9 @@ class Envira_Gallery_Shortcode {
 				$this->is_mobile_thumb = esc_url( $item['src'] );
 			} else {
 				$this->is_mobile_thumb = false;
-			}
-			$output .= '<a ' . $target . ' href="' . esc_url( $item['link'] ) . '" class="envira-gallery-' . sanitize_html_class( $data['id'] ) . ' envira-gallery-link " ' . $html5_attribute . '="enviragallery' . sanitize_html_class( $data['id'] ) . '" title="' . strip_tags( esc_attr( $item['title'] ) ) . '" data-envira-caption="' . $caption . '" data-envira-lightbox-caption="' . $lightbox_caption . '" data-envira-retina="' . ( isset( $item['lightbox_retina_image'] ) ? $item['lightbox_retina_image'] : '' ) . '" data-thumbnail="' . esc_url( $item['thumb'] ) . '" data-mobile-thumbnail="' . $this->is_mobile_thumb . '"' . ( ( isset($item['link_new_window']) && $item['link_new_window'] == 1 ) ? ' target="_blank"' : '' ) . ' ' . apply_filters( 'envira_gallery_output_link_attr', '', $id, $item, $data, $i ) . ' itemprop="contentUrl">';
+			}		
+			$title = str_replace('<', '&lt;', $item['title']); // not sure why this was not encoded
+			$output .= '<a ' . $target . ' href="' . esc_url( $item['link'] ) . '" class="envira-gallery-' . sanitize_html_class( $data['id'] ) . ' envira-gallery-link " ' . $html5_attribute . '="enviragallery' . sanitize_html_class( $data['id'] ) . '" title="' . strip_tags( htmlspecialchars( $title ) ) . '" data-envira-caption="' . $caption . '" data-envira-lightbox-caption="' . $lightbox_caption . '" data-envira-retina="' . ( isset( $item['lightbox_retina_image'] ) ? $item['lightbox_retina_image'] : '' ) . '" data-thumbnail="' . esc_url( $item['thumb'] ) . '" data-mobile-thumbnail="' . $this->is_mobile_thumb . '"' . ( ( isset($item['link_new_window']) && $item['link_new_window'] == 1 ) ? ' target="_blank"' : '' ) . ' ' . apply_filters( 'envira_gallery_output_link_attr', '', $id, $item, $data, $i ) . ' itemprop="contentUrl">';
 		}
 
 		$output	 = apply_filters( 'envira_gallery_output_before_image', $output, $id, $item, $data, $i );	
@@ -687,7 +690,7 @@ class Envira_Gallery_Shortcode {
 
 			// Automatic
 
-			$output_item = '<img id="envira-gallery-image-' . sanitize_html_class( $id ) . '" class="envira-gallery-image envira-gallery-image-' . $i . $gallery_theme . $gallery_theme_suffix . ' '.$envira_lazy_load.'" data-envira-index="' . $i . '" src="' . esc_url( $output_src ) . '"' . ( $this->get_config( 'dimensions', $data ) ? ' width="' . $this->get_config( 'crop_width', $data ) . '" height="' . $this->get_config( 'crop_height', $data ) . '"' : '' ) . ' data-envira-src="' . esc_url( $output_src ) . '" data-envira-gallery-id="' . $data['id'] . '" data-envira-item-id="' . $id . '" data-envira-caption="' . $caption . '" data-envira-lightbox-caption="' . $lightbox_caption . '"  alt="' . esc_attr( $item['alt'] ) . '" title="' . strip_tags( esc_attr( $item['title'] ) ) . '" ' . apply_filters( 'envira_gallery_output_image_attr', '', $id, $item, $data, $i ) . ' itemprop="thumbnailUrl" data-envira-srcset="' . esc_url( $output_src ) . ' 400w,' . esc_url( $output_src ) . ' 2x" data-envira-width="'.$output_width.'" data-envira-height="'.$output_height.'" srcset="' . ( ( $envira_lazy_load ) ? 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' : esc_url( $image_src_retina ) . ' 2x' ) . '" data-safe-src="'. ( ( $envira_lazy_load ) ? 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' : esc_url( $output_src ) ) . '" />';
+			$output_item = '<img id="envira-gallery-image-' . sanitize_html_class( $id ) . '" class="envira-gallery-image envira-gallery-image-' . $i . $gallery_theme . $gallery_theme_suffix . ' '.$envira_lazy_load.'" data-envira-index="' . $i . '" src="' . esc_url( $output_src ) . '"' . ( $this->get_config( 'dimensions', $data ) ? ' width="' . $this->get_config( 'crop_width', $data ) . '" height="' . $this->get_config( 'crop_height', $data ) . '"' : '' ) . ' data-envira-src="' . esc_url( $output_src ) . '" data-envira-gallery-id="' . $data['id'] . '" data-envira-item-id="' . $id . '" data-envira-caption="' . strip_tags( htmlspecialchars( $item['title'] ) ) . '" data-envira-lightbox-caption="' . $lightbox_caption . '"  alt="' . esc_attr( $item['alt'] ) . '" title="' . strip_tags( esc_attr( $item['title'] ) ) . '" ' . apply_filters( 'envira_gallery_output_image_attr', '', $id, $item, $data, $i ) . ' itemprop="thumbnailUrl" data-envira-srcset="' . esc_url( $output_src ) . ' 400w,' . esc_url( $output_src ) . ' 2x" data-envira-width="'.$output_width.'" data-envira-height="'.$output_height.'" srcset="' . ( ( $envira_lazy_load ) ? 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' : esc_url( $image_src_retina ) . ' 2x' ) . '" data-safe-src="'. ( ( $envira_lazy_load ) ? 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' : esc_url( $output_src ) ) . '" />';
 
 		} else {
 
@@ -786,11 +789,12 @@ class Envira_Gallery_Shortcode {
 	 *
 	 * @since 1.3.8
 	 *
-	 * @param	array	$data		Gallery Config
-	 * @param	int		$gallery_id Gallery ID
-	 * @return	array				Gallery Config
+	 * @param		array	$data		Gallery Config
+	 * @param		int		$gallery_id Gallery ID
+	 * @exclusion 	array	$exclusions	Gallery IDs
+	 * @return		array				Gallery Config
 	 */
-	public function maybe_sort_gallery( $data, $gallery_id ) {
+	public function maybe_sort_gallery( $data, $gallery_id, $exclusions = false ) {
 
 		if ( ! empty( $this->gallery_sort[ $gallery_id ] ) && ! empty( $data['gallery'] ) ) {
 			// sort using the gallery_sort order
@@ -800,9 +804,7 @@ class Envira_Gallery_Shortcode {
 
 		//Return if gallery is empty
 		if ( empty( $data['gallery'] ) ){
-
 			return $data;
-
 		}
 
 		// Get sorting method
@@ -825,7 +827,10 @@ class Envira_Gallery_Shortcode {
 				// Rebuild array in new order
 				$new = array();
 				foreach( $keys as $key ) {
-					$new[ $key ] = $data['gallery'][ $key ];
+					// if one of these images is an exclusion, don't add it
+					if ( !$exclusions || ( $exclusions && !in_array( $key, $exclusions ) ) ) {
+						$new[ $key ] = $data['gallery'][ $key ];
+					}
 				}
 
 				// Assign back to gallery
@@ -849,6 +854,9 @@ class Envira_Gallery_Shortcode {
 
 				// Sort titles / captions
 				natcasesort( $keys ); // natcasesort is case insensitive, unlike asort
+
+				// allow override of the type of sort
+				$keys = apply_filters( 'envira_gallery_sort_image_meta', $keys, $data, $sorting_method, $gallery_id );
 
 				if ( $sorting_direction == 'DESC' ) {
 					$keys = array_reverse( $keys, true ); 
@@ -989,15 +997,23 @@ class Envira_Gallery_Shortcode {
 		<script type="text/javascript">
 			<?php ob_start(); ?>
 
-			var envira_gallery = [],
+			<?php
+
+			$envira_javascript_var_init = 'var envira_gallery = [],
 				envira_galleries = [],
 				envira_gallery_images = {},
 				envira_isotopes = [],
 				envira_isotopes_config = [],
-				envira_gallery_sort = <?php echo $envira_gallery_sort; ?>,
-				envira_gallery_options = {};
+				envira_playing = false;';
 
-			var envira_playing = false;
+			$envira_javascript_var_init = apply_filters('envira_gallery_javascript_var_init', $envira_javascript_var_init );
+
+			echo $envira_javascript_var_init;
+
+			?>
+
+			var envira_gallery_sort = <?php echo $envira_gallery_sort; ?>,
+				envira_gallery_options = {};
 
 			jQuery(document).ready(function($){
 
@@ -1351,6 +1367,9 @@ class Envira_Gallery_Shortcode {
                             loop: <?php echo $this->get_config( 'loop', $data ); ?>,
                             mouseWheel: <?php echo $this->get_config( 'mousewheel', $data ); ?>,
                             preload: 1,
+                            <?php if ( $this->get_config( 'videos_enlarge', $data ) ) { ?>
+                            enviraVideoFitToView: true,
+                            <?php } ?>
 
                             <?php
                             /* Get open and transition effects */
@@ -1509,6 +1528,12 @@ class Envira_Gallery_Shortcode {
 
                                 <?php do_action( 'envira_gallery_api_after_load', $data ); ?>
 
+                                /* if this is a video, enable overfolow:hidden on envira-inner */
+                                $.extend(this, {
+                                    scrolling       : 'no'
+                                });
+
+
                                 <?php if ( $this->get_config( 'supersize', $data ) ): ?>
                                 /*$.extend(this, {
                                     width       : '100%',
@@ -1522,6 +1547,8 @@ class Envira_Gallery_Shortcode {
                                         $.envirabox.update();
                                     }
                                 });
+
+
 
                                 <?php
                                 // Set data attributes on the lightbox image, based on either
@@ -1842,7 +1869,11 @@ class Envira_Gallery_Shortcode {
 
 					};
 
-					envira_gallery['<?php echo $envira_gallery_data_id; ?>'].init();
+					if ( envira_gallery['<?php echo $envira_gallery_data_id; ?>'] !== undefined ) {
+
+						envira_gallery['<?php echo $envira_gallery_data_id; ?>'].init();
+
+					}
 
 					<?php
 

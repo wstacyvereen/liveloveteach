@@ -92,4 +92,14 @@ interface Toolset_Admin_Notice_Interface {
 	 * @return mixed
 	 */
 	public function dismiss();
+
+	/**
+	 * @return bool
+	 */
+	public function get_is_only_for_administrators();
+
+	/**
+	 * @param bool $bool
+	 */
+	public function set_is_only_for_administrators( $bool );
 }

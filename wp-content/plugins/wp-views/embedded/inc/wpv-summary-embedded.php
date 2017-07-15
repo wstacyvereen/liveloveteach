@@ -879,6 +879,56 @@ function wpv_get_filter_post_relationship_summary_txt( $view_settings, $short = 
 }
 
 /**
+ * Get the summary for the query filter by post type.
+ *
+ * @since 2.4.0
+ *
+ * @note WIP
+ */
+
+function wpv_get_filter_post_type_summary_txt( $view_settings ) {
+	$return = '';
+	if ( 
+		! isset( $view_settings['post_type_filter'] ) 
+		|| ! isset( $view_settings['post_type_filter']['mode'] )
+	) {
+		return $return;
+	}
+	$defaults = array(
+		'url'		=> '',
+		'shortcode'	=> '',
+		'framework'	=> ''
+	);
+	$view_settings['post_type_filter']	= wp_parse_args( $view_settings['post_type_filter'], $defaults );
+	switch ( $view_settings['post_type_filter']['mode'] ) {
+		case 'url':
+			$return = sprintf(
+				__( 'Select posts on the post types set by the URL parameter <strong>%1$s</strong>', 'wpv-views' ),
+				$view_settings['post_type_filter']['url']
+			);
+			break;
+		case 'shortcode':
+			$return = sprintf(
+				__( 'Select posts on the post types set by the shortcode attribute <strong>%1$s</strong>', 'wpv-views' ),
+				$view_settings['post_type_filter']['shortcode']
+			);
+			break;
+		case 'framework':
+			global $WP_Views_fapi;
+			if ( $WP_Views_fapi->framework_valid ) {
+				$return = sprintf(
+					__( 'Select posts on the post types set by the Framework option <strong>%1$s</strong>', 'wpv-views' ),
+					$view_settings['post_type_filter']['framework']
+				);
+			} else {
+				$return = $WP_Views_fapi->get_framework_missing_message_for_filters();
+			}
+			break;
+	}
+	return $return;
+}
+
+/**
 * wpv_get_filter_post_id_summary_txt
 *
 * Returns the post id filter summary for a View

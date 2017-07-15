@@ -5,7 +5,7 @@ Plugin URI: http://wp-types.com/?utm_source=viewsplugin&utm_campaign=views&utm_m
 Description: Views will query the content from the database, iterate through it and let you display it with flair. This is the embedded version of the plugin, so you will not be able to edit any component.
 Author: OnTheGoSystems
 Author URI: http://www.onthegosystems.com
-Version: 2.3.1
+Version: 2.4.0
 */
 
 

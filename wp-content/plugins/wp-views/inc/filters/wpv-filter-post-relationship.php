@@ -28,6 +28,10 @@ class WPV_Post_Relationship_Filter {
     static function on_load() {
         add_action( 'init',			array( 'WPV_Post_Relationship_Filter', 'init' ) );
 		add_action( 'admin_init',	array( 'WPV_Post_Relationship_Filter', 'admin_init' ) );
+		// Scripts
+		add_action( 'admin_enqueue_scripts', array( 'WPV_Post_Relationship_Filter','admin_enqueue_scripts' ), 20 );
+		// Custom search shortcode GUI
+		add_filter( 'wpv_filter_wpv_register_form_filters_shortcodes', array( 'WPV_Post_Relationship_Filter', 'wpv_custom_search_filter_shortcodes_post_relationship' ), 0 );
     }
 
     static function init() {
@@ -61,8 +65,6 @@ class WPV_Post_Relationship_Filter {
 		add_action( 'wp_ajax_wpv_filter_post_relationship_delete',		array( 'WPV_Post_Relationship_Filter', 'wpv_filter_post_relationship_delete_callback' ) );
 		// Helper callbacks
 		add_action( 'wp_ajax_wpv_get_post_relationship_post_select',	array( 'WPV_Post_Relationship_Filter', 'wpv_get_post_relationship_post_select_callback' ) );
-		// Scripts
-		add_action( 'admin_enqueue_scripts',							array( 'WPV_Post_Relationship_Filter','admin_enqueue_scripts' ), 20 );
 		// TODO This might not be needed here, maybe for summary filter
 		//add_action( 'wp_ajax_wpv_filter_post_relationship_sumary_update', array( 'WPV_Post_Relationship_Filter', 'wpv_filter_post_relationship_sumary_update_callback' ) );
 	}
@@ -386,23 +388,20 @@ class WPV_Post_Relationship_Filter {
 			'post_relationship_shortcode_attribute',
 			'post_relationship_url_parameter',
 			'post_relationship_url_tree',
-			'post_relationship_framework'
+			'post_relationship_framework',
+			// Backwards compatibility: 
+			// those entries existed in the View settings up until 2.4.0
+			'filter_controls_field_name',
+			'filter_controls_mode',
+			'filter_controls_label',
+			'filter_controls_type',
+			'filter_controls_values',
+			'filter_controls_enable',
+			'filter_controls_param'
 		);
 		foreach ( $to_delete as $index ) {
 			if ( isset( $view_array[$index] ) ) {
 				unset( $view_array[$index] );
-			}
-		}
-		$len = isset( $view_array['filter_controls_field_name'] ) ? count( $view_array['filter_controls_field_name'] ) : 0;
-		$splice = false;
-		for ( $i = 0; $i < $len; $i++ ) {
-			if ( strpos( $view_array['filter_controls_field_name'][$i], 'relationship' ) !== false ) {
-				$splice = $i;
-			}
-		}
-		if ( $splice !== false ) {
-			foreach ( Editor_addon_parametric::$prm_db_fields as $dbf ) {
-				array_splice( $view_array[$dbf], $splice, 1 );
 			}
 		}
 		update_post_meta( $_POST["id"], '_wpv_settings', $view_array );
@@ -664,5 +663,52 @@ class WPV_Post_Relationship_Filter {
 		die();
 	}
 	*/
+	
+	/**
+	 * Register the wpv-control-post-relationship shortcode filter.
+	 *
+	 * @since 2.4.0
+	 */
+	
+	static function wpv_custom_search_filter_shortcodes_post_relationship( $form_filters_shortcodes ) {
+		$form_filters_shortcodes['wpv-control-post-relationship'] = array(
+			'query_type_target'				=> 'posts',
+			'query_filter_define_callback'	=> array( 'WPV_Post_Relationship_Filter', 'query_filter_define_callback' ),
+			'custom_search_filter_group'	=> __( 'Post filters', 'wpv-views' ),
+			'custom_search_filter_items'	=> array(
+												'post_relationship'	=> array(
+													'name'			=> __( 'Post relationship', 'wpv-views' ),
+													'present'		=> 'post_relationship_mode',
+													'params'	=> array()
+												)
+			)
+		);
+		return $form_filters_shortcodes;
+	}
+	
+	/**
+	 * Callback to create or modify the query filter after creating or editing the custom search shortcode.
+	 *
+	 * @param $view_id		int		The View ID
+	 * @param $shortcode		string	The affected shortcode, wpv-control-post-relationship
+	 * @param $attributes	array	The associative array of attributes for this shortcode
+	 * @param $attributes_raw array	The associative array of attributes for this shortcode, as collected from its dialog, before being filtered
+	 *
+	 * @uses wpv_action_wpv_save_item
+	 *
+	 * @since 2.4.0
+	 */
+	
+	static function query_filter_define_callback( $view_id, $shortcode, $attributes = array(), $attributes_raw = array() ) {
+		if ( ! isset( $attributes['url_param'] ) ) {
+			return;
+		}
+		$view_array = get_post_meta( $view_id, '_wpv_settings', true );
+		$view_array['post_relationship_mode']			= array( 'url_parameter' );
+		$view_array['post_relationship_url_parameter']	= $attributes['url_param'];
+		$view_array['post_relationship_url_tree']		= isset( $attributes['ancestors'] ) ? $attributes['ancestors'] : '';
+		$result = update_post_meta( $view_id, '_wpv_settings', $view_array );
+		do_action( 'wpv_action_wpv_save_item', $view_id );
+	}
 
 }

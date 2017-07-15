@@ -71,7 +71,7 @@ class Envira_Gallery_Updater {
      * @var bool|string
      */
     public $key = false;
-    
+
     /**
      * Holds the update data returned from the API.
      *
@@ -80,7 +80,7 @@ class Envira_Gallery_Updater {
      * @var bool|object
      */
     public $update = false;
-    
+
     /**
      * Holds the plugin info details for the update.
      *

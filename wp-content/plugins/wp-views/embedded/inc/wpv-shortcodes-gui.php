@@ -344,6 +344,101 @@ function wpv_ajax_wpv_insert_view_dialog_callback() {
 	die();
 }
 
+function wpv_shortcode_gui_dialog_render_field( $key, $data, $shortcode, $post_type ) {
+	$content = '';
+	if ( ! isset( $data['type'] ) ) {
+		return $content;
+	}
+	$id = $shortcode;
+	if ( 'grouped' == $data['type'] ) {
+		$content .= sprintf(
+			'<div class="wpv-shortcode-gui-attribute-group js-wpv-shortcode-gui-attribute-group js-wpv-shortcode-gui-attribute-group-for-%s" data-type="%s" data-group="%s">',
+			esc_attr( $key ),
+			esc_attr( $data['type'] ),
+			esc_attr( $key )
+		);
+	} else {
+		$id = sprintf(
+			'%s-%s', 
+			$shortcode, 
+			$key
+		);
+		$content .= sprintf(
+			'<div class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-%s" data-type="%s" data-attribute="%s" data-default="%s">',
+			esc_attr( $key ),
+			esc_attr( $data['type'] ),
+			esc_attr( $key ),
+			isset( $data['default'] ) ? esc_attr( $data['default'] ) : ''
+		);
+	}
+	
+	$attr_value = isset( $data['default'] ) ? $data['default'] : '';
+	$attr_value = isset( $data['default_force'] ) ? $data['default_force'] : $attr_value;
+	
+	$classes = array('js-shortcode-gui-field');
+	$required = '';
+	if ( 
+		isset( $data['required'] ) 
+		&& $data['required'] 
+	) {
+		$classes[] = 'js-wpv-shortcode-gui-required';
+		$required = ' <span>- ' . esc_html( __( 'required', 'wpv-views' ) ) . '</span>';
+	}
+	if ( isset( $data['label'] ) ) {
+		$content .= sprintf(
+			'<h3>%s%s</h3>', 
+			esc_html( $data['label'] ),
+			$required
+		);
+	}
+	if ( isset( $data['pseudolabel'] ) ) {
+		$content .= sprintf(
+			'<span class="wpv-shortcode-gui-attribute-pseudolabel">%s%s</span>', 
+			esc_html( $data['pseudolabel'] ),
+			$required
+		);
+	}
+	/**
+	 * require
+	 */
+	if ( isset($data['required']) && $data['required']) {
+		$classes[] = 'js-required';
+	}
+	/**
+	 * Filter of options
+	 *
+	 * This filter allow to manipulate of radio/select field options.
+	 * Filter is 'wpv_filter_wpv_shortcodes_gui_api_{shortode}_options'
+	 *
+	 * @param array $options for description see param $options in 
+	 * wpv_filter_wpv_shortcodes_gui_api filter.
+	 *
+	 * @param string $type field type
+	 *
+	 */
+	if ( isset( $data['options'] ) ) {
+		$data['options'] = apply_filters( 'wpv_filter_wpv_shortcodes_gui_api_' . $id . '_options', $data['options'], $data['type'] );
+	}
+
+	$content .= wpv_shortcode_gui_dialog_render_attribute( $id, $data, $classes, $post_type );
+
+	$desc_and_doc = array();
+	if ( isset( $data['description'] ) ) {
+		$desc_and_doc[] = esc_html( $data['description'] );
+	}
+	if ( isset( $data['documentation'] ) ) {
+		$desc_and_doc[] = sprintf(
+			__( 'Specific documentation: %s', 'wpv-views' ),
+			$data['documentation']
+		);
+	}
+	if ( ! empty( $desc_and_doc ) ) {
+		$content .= '<p class="description">' . implode( '<br />', $desc_and_doc ) . '</p>';
+	}
+	$content .= '</div>';
+	return $content;
+}
+
 
 /**
 * wpv_shortcode_gui_dialog_render_attribute
@@ -379,6 +474,13 @@ function wpv_shortcode_gui_dialog_render_attribute( $id, $data = array(), $class
 			$content .= '<p class="' . esc_attr( $id ) . '">'
 				. $data['content']
 				. '</p>';
+		}
+		break;
+	case 'message':
+		if ( isset( $data['content'] ) ) {
+			$content .= '<div class="' . esc_attr( $id ) . '">'
+				. $data['content']
+				. '</div>';
 		}
 		break;
     case 'number':
@@ -444,9 +546,11 @@ function wpv_shortcode_gui_dialog_render_attribute( $id, $data = array(), $class
         );
         break;
     case 'radio':
+		$list_class = isset( $data['class'] ) ? ( ' class="' . esc_attr( $data['class'] ) . '"' ) : '';
         $content .= sprintf(
-            '<ul id="%s">', 
-            esc_attr( $id )
+            '<ul id="%s"%s>', 
+            esc_attr( $id ),
+			$list_class
         );
         foreach ( $data['options'] as $option_value => $option_label ) {
             if ( 'custom-combo' == $option_value ) {
@@ -484,9 +588,11 @@ function wpv_shortcode_gui_dialog_render_attribute( $id, $data = array(), $class
         $content .= '</ul>';
         break;
 	case 'radiohtml':
+        $list_class = isset( $data['class'] ) ? ( ' class="' . esc_attr( $data['class'] ) . '"' ) : '';
         $content .= sprintf(
-            '<ul id="%s">', 
-            esc_attr( $id )
+            '<ul id="%s"%s>', 
+            esc_attr( $id ),
+			$list_class
         );
         foreach ( $data['options'] as $option_value => $option_label ) {
             if ( 'custom-combo' == $option_value ) {
@@ -540,6 +646,17 @@ function wpv_shortcode_gui_dialog_render_attribute( $id, $data = array(), $class
         }
         $content .= '</select>';
         break;
+	case 'grouped':
+		$columns = count( $data['fields'] );
+		$columns_width = (int) ( 100 / $columns );
+		$content .= '<ul class="wpv-shortcode-gui-dialog-item-grouped">';
+		foreach ( $data['fields'] as $grouped_field_attribute => $grouped_field_data ) {
+			$content .= '<li style="width:' . $columns_width . '%;">';
+			$content .= wpv_shortcode_gui_dialog_render_field( $grouped_field_attribute, $grouped_field_data, $id, $post_type );
+			$content .= '</li>';
+		}
+		$content .= '</ul>';
+		break;
     case 'post':
 		$content .= sprintf(
             '<ul id="%s">', 
@@ -801,6 +918,8 @@ function wp_ajax_wpv_shortcode_gui_dialog_create() {
 	
 	$parameters		= wpv_sanitize_shortcode_forced_data( $parameters );
 	$overrides		= wpv_sanitize_shortcode_forced_data( $overrides );
+	
+	$gui_action		= isset( $_GET['gui_action'] ) ? sanitize_text_field( $_GET['gui_action'] ) : '';
 	/**
 	 * White list of shortcodes.
 	 *
@@ -914,6 +1033,17 @@ function wp_ajax_wpv_shortcode_gui_dialog_create() {
         esc_attr( $shortcode )
     );
     echo '<input type="hidden" value="' . esc_attr( $shortcode ) . '" class="wpv-shortcode-gui-shortcode-name js-wpv-shortcode-gui-shortcode-name" />';
+	if (
+		isset( $options['additional_data'] ) 
+		&& is_array( $options['additional_data'] )
+	) {
+		foreach ( $options['additional_data'] as $add_data_key => $add_data_value ) {
+			echo '<span class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-' . esc_attr( $add_data_key ) . '" data-attribute="' . esc_attr( $add_data_key ) . '" data-type="param">';
+			echo '<input name="' . esc_attr( $add_data_key ) . '" value="' . esc_attr( $add_data_value ) . '" disabled="disabled" type="hidden">';
+			echo '</span>';
+		}
+	}
+	
     echo '<div id="js-wpv-shortcode-gui-dialog-tabs" class="wpv-shortcode-gui-tabs js-wpv-shortcode-gui-tabs">';
     $tabs = '';
     $content = '';
@@ -939,78 +1069,7 @@ function wp_ajax_wpv_shortcode_gui_dialog_create() {
          * add fields
          */
         foreach ( $group_data['fields'] as $key => $data ) {
-            if ( ! isset( $data['type'] ) ) {
-                continue;
-            }
-            $id = sprintf(
-				'%s-%s', 
-				$shortcode, 
-				$key
-			);
-            $content .= sprintf(
-                '<div class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-%s" data-type="%s" data-attribute="%s" data-default="%s">',
-                esc_attr( $key ),
-				esc_attr( $data['type'] ),
-                esc_attr( $key ),
-                isset( $data['default'] ) ? esc_attr( $data['default'] ) : ''
-            );
-			$attr_value = isset( $data['default'] ) ? $data['default'] : '';
-			$attr_value = isset( $data['default_force'] ) ? $data['default_force'] : $attr_value;
-			
-            $classes = array('js-shortcode-gui-field');
-			$required = '';
-			if ( 
-				isset( $data['required'] ) 
-				&& $data['required'] 
-			) {
-				$classes[] = 'js-wpv-shortcode-gui-required';
-				$required = ' <span>- ' . esc_html( __( 'required', 'wpv-views' ) ) . '</span>';
-			}
-			if ( isset( $data['label'] ) ) {
-                $content .= sprintf(
-					'<h3>%s%s</h3>', 
-					esc_html( $data['label'] ),
-					$required
-				);
-            }
-            /**
-             * require
-             */
-            if ( isset($data['required']) && $data['required']) {
-                $classes[] = 'js-required';
-            }
-            /**
-             * Filter of options
-             *
-             * This filter allow to manipulate of radio/select field options.
-             * Filter is 'wpv_filter_wpv_shortcodes_gui_api_{shortode}_options'
-             *
-             * @param array $options for description see param $options in 
-             * wpv_filter_wpv_shortcodes_gui_api filter.
-             *
-             * @param string $type field type
-             *
-             */
-            if ( isset( $data['options'] ) ) {
-                $data['options'] = apply_filters( 'wpv_filter_wpv_shortcodes_gui_api_' . $id . '_options', $data['options'], $data['type'] );
-            }
-
-            $content .= wpv_shortcode_gui_dialog_render_attribute( $id, $data, $classes, $post_type );
-
-			$desc_and_doc = array();
-			if ( isset( $data['description'] ) ) {
-				$desc_and_doc[] = esc_html( $data['description'] );
-			}
-			if ( isset( $data['documentation'] ) ) {
-				$desc_and_doc[] = sprintf(
-					__( 'Specific documentation: %s', 'wpv-views' ),
-					$data['documentation']
-				);
-			}
-			if ( ! empty( $desc_and_doc ) ) {
-				$content .= '<p class="description">' . implode( '<br />', $desc_and_doc ) . '</p>';
-			}
-			$content .= '</div>';
+			$content .= wpv_shortcode_gui_dialog_render_field( $key, $data, $shortcode, $post_type );
 		}
 		if ( isset( $group_data['content'] ) ) {
 			if ( isset( $group_data['content']['hidden'] ) ) {
@@ -1079,7 +1138,7 @@ function wp_ajax_wpv_shortcode_gui_dialog_create() {
         $content .= '</div>';
     }
     printf(
-		'<ul>%s</ul>', 
+		'<ul class="js-wpv-shortcode-gui-tabs-list">%s</ul>', 
 		$tabs
 	);
     echo $content;
@@ -1457,19 +1516,17 @@ function wpv_force_shortcodes_gui_basic_archive_items( $menu = array() ) {
 }
 
 /**
- * wpv_load_post_field_section_on_demand
- *
  * Generates the li items for the Post field section of the shortcodes GUI, on demand
  *
  * @since 1.10.0
  * @since 2.3.0 Review the items HTML structure to match the Fields and Views dialog refactor.
+ * @since 2.3.2 Return just an array of fields, and build the structure in JavaScript, so this can be reused on other methods.
  */
 
-add_action( 'wp_ajax_wpv_shortcodes_gui_load_post_field_section_on_demand', 'wpv_shortcodes_gui_load_post_field_section_on_demand' );
+add_action( 'wp_ajax_wpv_shortcodes_gui_load_post_fields_on_demand', 'wpv_shortcodes_gui_load_post_fields_on_demand' );
 
-function wpv_shortcodes_gui_load_post_field_section_on_demand() {
+function wpv_shortcodes_gui_load_post_fields_on_demand() {
 	global $WP_Views;
-	$dialog_content = '';
 	$cf_keys = apply_filters( 'wpv_filter_wpv_get_postmeta_keys', array() );
 	global $post;
 
@@ -1480,17 +1537,14 @@ function wpv_shortcodes_gui_load_post_field_section_on_demand() {
 	) {
 		$post_id = $post->ID;
 	}
+	$native_fields = array();
 	foreach ( $cf_keys as $cf_key ) {
 		if ( ! wpv_is_types_custom_field( $cf_key ) ) {
-			$dialog_content .= '<li class="item">'
-					. '<button class="button button-secondary button-small js-wpv-shortcode-gui-post-field-section-item" data-fieldkey="' . esc_attr( $cf_key ) . '">' 
-						. $cf_key 
-					. '</button>'
-				. '</li>';
+			$native_fields[] = $cf_key;
 		}
 	}
 	$data = array(
-		'section' => $dialog_content
+		'fields' => $native_fields
 	);
 	wp_send_json_success( $data );
 }

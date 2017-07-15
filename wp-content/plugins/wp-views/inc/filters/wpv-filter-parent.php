@@ -919,7 +919,7 @@ class WPV_Parent_Filter {
 					<option value="0"><?php echo __('None', 'wpv-views'); ?></option>
 					<?php 
 						$my_walker = new Walker_Category_id_select( $view_settings['taxonomy_parent_id'] );
-						echo wp_terms_checklist( 0, array( 'taxonomy' => $taxonomy, 'walker' => $my_walker ) );
+						wp_terms_checklist( 0, array( 'taxonomy' => $taxonomy, 'walker' => $my_walker ) );
 					?>
 				</select>
 				<?php
@@ -951,7 +951,7 @@ class WPV_Parent_Filter {
 				<option value="0"><?php echo __('None', 'wpv-views'); ?></option>
 				<?php 
 					$my_walker = new Walker_Category_id_select( 0 );
-					echo wp_terms_checklist( 0, array( 'taxonomy' => $taxonomy, 'walker' => $my_walker ) );
+					wp_terms_checklist( 0, array( 'taxonomy' => $taxonomy, 'walker' => $my_walker ) );
 				?>
 			</select>
 			<?php

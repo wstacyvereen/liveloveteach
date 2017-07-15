@@ -314,7 +314,11 @@ WPViews.LayoutWizard = function( $ ) {
 			if ( ! $( this ).hasClass( 'js-wpv-selec2-inited' ) ) {
 				$( this )
 					.addClass( 'js-wpv-selec2-inited' )
-					.toolset_select2()
+					.toolset_select2(
+						{ 
+							dropdownParent: $( '.js-wpv-dialog-layout-wizard' )
+						}
+					)
 					.trigger( 'change' );
 			}
 		});
@@ -907,7 +911,11 @@ WPViews.LayoutWizard = function( $ ) {
 							if ( ! $( this ).hasClass( 'js-wpv-selec2-inited' ) ) {
 								$( this )
 									.addClass( 'js-wpv-selec2-inited' )
-									.toolset_select2();
+									.toolset_select2(
+										{ 
+											dropdownParent: $( '.js-wpv-dialog-layout-wizard' )
+										}
+									);
 							}
 						});
 						$( '.js-wpv-layout-wizard-layout-fields' )
@@ -1087,11 +1095,17 @@ WPViews.LayoutWizard = function( $ ) {
 		}
 	});
 	
-	// ---------------------------------
-	// Loop Output overlay and skip wizard
-	// ---------------------------------
+	/**
+	 * Loop Output overlay and skip wizard.
+	 *
+	 * @since unknown
+	 * @since 2.4.0 Bind it late in the toolset_text_editor_CodeMirror_init action as we dynamically add buttons there
+	 */
 	
-	self.init_wizard_buttons = function() {
+	self.init_wizard_buttons = function( editor_id ) {
+		if ( 'wpv_layout_meta_html_content' != editor_id ) {
+			return self;
+		}
 		if ( $( '.js-wpv-settings-layout-extra .js-wpv-loop-wizard-skip' ).length > 0 ) {
 			$( '.js-wpv-settings-layout-extra .js-code-editor-toolbar button:not(.js-wpv-loop-wizard-open)' ).prop( 'disabled', true );
 			$( '.js-wpv-settings-layout-extra .quicktags-toolbar .button' ).prop( 'disabled', true );
@@ -1156,7 +1170,7 @@ WPViews.LayoutWizard = function( $ ) {
 				$( '.js-wpv-ct-listing-' + self.use_loop_template_id + ' .js-wpv-content-template-open' ).click();
 			}
 		}
-		self.init_wizard_buttons();
+		Toolset.hooks.addAction( 'toolset_text_editor_CodeMirror_init', self.init_wizard_buttons, 999 );
 	};
 	
 	self.init();
@@ -1259,7 +1273,11 @@ function wpv_restore_wizard_popup(shortcode) {
 			jQuery.each( jQuery('.js-wpv-dialog-layout-wizard select.js-wpv-select2'),function() {
                     jQuery(this)
 						.addClass( 'js-wpv-selec2-inited' )
-						.toolset_select2();
+						.toolset_select2(
+							{ 
+								dropdownParent: jQuery( '.js-wpv-dialog-layout-wizard' )
+							}
+						);
             });
 			
 			jQuery( '.js-wpv-layout-wizard-layout-fields' )
@@ -1316,7 +1334,11 @@ function wpv_cancel_wizard_popup() {
             jQuery.each( jQuery('.js-wpv-dialog-layout-wizard select.js-wpv-select2'),function() {
                     jQuery(this)
 						.addClass( 'js-wpv-selec2-inited' )
-						.toolset_select2();
+						.toolset_select2(
+							{ 
+								dropdownParent: jQuery( '.js-wpv-dialog-layout-wizard' )
+							}
+						);
             });
 			
 			jQuery( '.js-wpv-layout-wizard-layout-fields' )

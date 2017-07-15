@@ -5,7 +5,7 @@ Plugin URI: http://wp-types.com/?utm_source=viewsplugin&utm_campaign=views&utm_m
 Description: When you need to create lists of items, Views is the solution. Views will query the content from the database, iterate through it and let you display it with flair. You can also enable pagination, search, filtering and sorting by site visitors.
 Author: OnTheGoSystems
 Author URI: http://www.onthegosystems.com
-Version: 2.3.1
+Version: 2.4.0
 */
 
 
@@ -22,7 +22,7 @@ if ( defined( 'WPV_VERSION' ) ) {
 	return;
 }
 
-define( 'WPV_VERSION', '2.3.1' );
+define( 'WPV_VERSION', '2.4.0' );
 
 /**
 * Set constants
@@ -199,10 +199,13 @@ require WPV_PATH_EMBEDDED . '/inc/wpv-filter-post-types-embedded.php';
 require WPV_PATH_EMBEDDED . '/inc/wpv-filter-limit-embedded.php';
 
 /**
-* Backend edit sections and query filters
-*
-* Only load the sections and filter files when editing a View or WordPress Archive, or when doing AJAX
-*/
+ * Backend edit sections and query filters
+ *
+ * Only load the sections and filter files when editing a View or WordPress Archive, or when doing AJAX
+ *
+ * @since unknown* @since unknown
+ * @since 2.4.0 WIP Added the post type filter
+ */
 
 if ( 
 	( 
@@ -230,16 +233,22 @@ if (
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-meta-field.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-parent.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-post-relationship.php' );
+	require_once( WPV_PATH . '/inc/filters/wpv-filter-post-type.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-search.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-status.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-sticky.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-taxonomy-term.php' );
 	require_once( WPV_PATH . '/inc/filters/wpv-filter-users.php' );
+	
+	//require_once( WPV_PATH . '/inc/filters/editor-addon-parametric.class.php' );
 }
 
 /**
-* Frontend query filters
-*/
+ * Frontend query filters.
+ *
+ * @since unknown
+ * @since 2.4.0 WIP Added the post type filter embedded side
+ */
 
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-author-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-category-embedded.php' );
@@ -248,6 +257,7 @@ require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-id-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-meta-field-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-parent-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-post-relationship-embedded.php' );
+require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-post-type-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-search-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-status-embedded.php' );
 require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-sticky-embedded.php' );
@@ -259,6 +269,15 @@ require_once( WPV_PATH_EMBEDDED . '/inc/filters/wpv-filter-sticky-embedded.php' 
 require WPV_PATH_EMBEDDED . '/inc/WPML/wpv_wpml.php';
 require WPV_PATH . '/inc/wpv-wpml.php';
 WPV_WPML_Integration::initialize();
+
+/**
+ * CRED integration
+ *
+ * @since 2.4.0
+ */
+require_once WPV_PATH_EMBEDDED . '/inc/third-party/wpv-compatibility-cred.class.php';
+WPV_Compatibility_CRED::initialize();
+
 
 /**
  * WooCommerce integration

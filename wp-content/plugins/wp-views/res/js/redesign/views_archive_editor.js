@@ -497,6 +497,13 @@ WPViews.WPAEditScreen = function( $ ) {
 		return WPViews.wpv_post_relationship_tree_reference;
 	};
 	
+	self.get_post_types_reference = function() {
+		if ( typeof WPViews.wpv_post_types_reference === "undefined" ) {
+			return {};
+		}
+		return WPViews.wpv_post_types_reference;
+	};
+	
 	// ---------------------------------
 	// Model
 	// ---------------------------------
@@ -821,6 +828,9 @@ WPViews.WPAEditScreen = function( $ ) {
 		
 		// Filter to get the Types post relationship tree reference, stored in WPViews.wpv_post_relationship_tree_reference
 		Toolset.hooks.addFilter( 'wpv-filter-wpv-edit-screen-get-post-relationship-tree-reference', self.get_post_relationship_tree_reference );
+		
+		// Filter to get the Types post relationship tree reference, stored in WPViews.wpv_post_relationship_tree_reference
+		Toolset.hooks.addFilter( 'wpv-filter-wpv-edit-screen-get-post-types-reference', self.get_post_types_reference );
 		
 		/**
 		* Actions
@@ -3035,8 +3045,12 @@ WPViews.WPAEditScreen = function( $ ) {
 	self.init_pagination_dialog_options = function() {
 		$( '.js-wpv-archive-pagination-control, .js-wpv-archive-pagination-shortcode-attribute:checkbox' ).prop( 'checked', false );
 		$( '.js-wpv-archive-pagination-shortcode-attribute:text' ).val( '' );
+        $( 'input.js-wpv-archive-pagination-control:radio[value="bootstrap"]' ).prop( 'checked', true );
 		$( '.js-wpv-dialog-pagination-wizard-item-extra' ).hide();
-		$( '.js-wpv-dialog-pagination-wizard-preview' ).addClass( 'disabled' );
+        $( '.js-wpv-dialog-pagination-wizard [class*="js-wpv-dialog-pagination-wizard-sub-item-dependant-"]' ).hide();
+        var dialog_pagination_preview = $( '.js-wpv-dialog-pagination-wizard-preview' );
+        dialog_pagination_preview.addClass( 'disabled' );
+        dialog_pagination_preview.find( '[class *= js-wpv-dialog-pagination-wizard-preview- ]' ).hide();
 		$( '.js-wpv-insert-archive-pagination' )
 			.prop( 'disabled', true )
 			.removeClass( 'button-primary' )
@@ -3044,14 +3058,26 @@ WPViews.WPAEditScreen = function( $ ) {
 	};
 	
 	self.get_pagination_shortcode = function() {
-		var output = '';
+		var output = '',
+            output_framework = '',
+            output_framework_attribute = '',
+			previous_or_next_pending = false,
+        	previous_or_next_pending_html = '';
+
+        output_framework = $( '.js-wpv-archive-pagination-control[value="bootstrap"]' ).prop( 'checked' ) ? 'bootstrap' : '';
+
 		$.each( $( 'input.js-wpv-archive-pagination-control:checked' ), function() {
 			var thiz = $( this ),
 			value = thiz.val(),
 			container = thiz.closest( '.js-wpv-archive-pagination-shortcode' );
 			switch ( value ) {
 				case 'wpv-pager-archive-prev-page':
-					output += '[' + value;
+                    if ( output_framework !== 'bootstrap' ) {
+                        output += '[' + value;
+                    } else {
+                        output += '<ul class="pagination">\n\t<li class="page-item">[' + value;
+					}
+
 					container
 						.find( '.js-wpv-archive-pagination-shortcode-attribute' )
 							.each( function() {
@@ -3069,10 +3095,26 @@ WPViews.WPAEditScreen = function( $ ) {
 										break;
 								}
 							});
-					output += '][wpml-string context="wpv-views"]Previous[/wpml-string][/wpv-pager-archive-prev-page]';
+                    if ( output_framework !== 'bootstrap' ) {
+                        output += '][wpml-string context="wpv-views"]Previous[/wpml-string][/wpv-pager-archive-prev-page]';
+                    } else {
+                        previous_or_next_pending = true;
+                        previous_or_next_pending_html = '][wpml-string context="wpv-views"]Previous[/wpml-string][/wpv-pager-archive-prev-page]</li>\n</ul>\n';
+                        output += previous_or_next_pending_html;
+                    }
 					break;
 				case 'wpv-pager-archive-next-page':
-					output += '[' + value;
+                    if ( output_framework !== 'bootstrap' ) {
+                        output += '[' + value;
+                    } else {
+                    	if ( previous_or_next_pending ) {
+                            output = output.replace( previous_or_next_pending_html, '][wpml-string context="wpv-views"]Previous[/wpml-string][/wpv-pager-archive-prev-page]</li>\n\t' );
+                            output += '<li class="page-item">[' + value;
+                            previous_or_next_pending = false;
+						} else {
+                            output += '<ul class="pagination">\n\t<li class="page-item">[' + value;
+						}
+                    }
 					container
 						.find( '.js-wpv-archive-pagination-shortcode-attribute' )
 							.each( function() {
@@ -3090,32 +3132,50 @@ WPViews.WPAEditScreen = function( $ ) {
 										break;
 								}
 							});
-					output += '][wpml-string context="wpv-views"]Next[/wpml-string][/wpv-pager-archive-next-page]';
+
+                    if ( output_framework !== 'bootstrap' ) {
+                        output += '][wpml-string context="wpv-views"]Next[/wpml-string][/wpv-pager-archive-next-page]';
+                    } else {
+                        output += '][wpml-string context="wpv-views"]Next[/wpml-string][/wpv-pager-archive-next-page]</li>\n</ul>\n';
+                    }
+                    previous_or_next_pending = false;
 					break;
 				case 'wpv-pager-archive-nav-links':
+                    var output_additional_attributes = '';
 					output += '[' + value;
 					container
 						.find( '.js-wpv-archive-pagination-shortcode-attribute' )
 							.each( function() {
 								var thiz_attr = $( this );
+
+                                if (
+                                    ['force_previous_next', 'text_for_previous_link', 'text_for_next_link'].indexOf( thiz_attr.data( 'attribute' ) ) >= 0 &&
+                                    false === $( '#js-wpv-dialog-pagination-wizard-item-extra-nav-links-previous-next').prop( 'checked' )
+                                ) {
+                                    return;
+                                }
+
 								switch ( thiz_attr.attr( 'type' ) ) {
 									case 'checkbox':
 										if ( thiz_attr.prop( 'checked' ) ) {
-											output += ' ' + thiz_attr.data( 'attribute' ) + '="' + thiz_attr.val() + '"';
+                                            output_additional_attributes += ' ' + thiz_attr.data( 'attribute' ) + '="' + thiz_attr.val() + '"';
 										}
 										break;
 									case 'text':
 										if ( thiz_attr.val() != '' ) {
-											output += ' ' + thiz_attr.data( 'attribute' ) + '="' + thiz_attr.val() + '"';
+                                            output_additional_attributes += ' ' + thiz_attr.data( 'attribute' ) + '="' + thiz_attr.val() + '"';
 										}
 										break;
 								}
 							});
-					output += ']';
+					output_framework_attribute  = ( ( output_framework.length > 0 ) ? ' output="' + output_framework + '"' : '');
+					output +=  output_framework_attribute + output_additional_attributes + ']';
+                    previous_or_next_pending = false;
 					break;
 				case 'wpv-pager-archive-current-page':
 				case 'wpv-pager-archive-total-pages':
 					output += '[' + value + ']';
+                    previous_or_next_pending = false;
 					break;
 			}
 		});
@@ -3183,7 +3243,7 @@ WPViews.WPAEditScreen = function( $ ) {
 					.addClass( 'disabled' );
 		}
 		
-		if ( selected_options.length > 0 ) {
+		if ( selected_options.length > 1 ) {
 			submit_button
 				.prop( 'disabled', false )
 				.addClass( 'button-primary' )
@@ -3194,20 +3254,23 @@ WPViews.WPAEditScreen = function( $ ) {
 				.removeClass( 'button-primary' )
 				.addClass( 'button-secondary' );
 		}
-		
-		if ( selected_options.length > 0 ) {
-			submit_button
-				.prop( 'disabled', false )
-				.addClass( 'button-primary' )
-				.removeClass( 'button-secondary' );
-		} else {
-			submit_button
-				.prop( 'disabled', true )
-				.removeClass( 'button-primary' )
-				.addClass( 'button-secondary' );
-		}
-		
 	});
+
+    $( document ).on( 'change', 'input.js-wpv-pagination-sub-dialog-control', function() {
+        var thiz = $( this ),
+            thiz_checked = thiz.prop( 'checked' ),
+            thiz_data = thiz.data( 'attribute' ),
+            thiz_exra_dependant = $( '.js-wpv-dialog-pagination-wizard-sub-item-dependant-' + thiz_data ),
+            sub_dialog_pagination_preview = $( '.js-wpv-dialog-pagination-wizard-preview' ).find( '[class *= js-wpv-dialog-pagination-wizard-preview- ]' );
+
+        if ( thiz_checked ) {
+            thiz_exra_dependant.fadeIn( 'fast' );
+            sub_dialog_pagination_preview.show();
+        } else {
+            thiz_exra_dependant.fadeOut( 'fast' );
+            sub_dialog_pagination_preview.hide();
+        }
+    });
 	
 	// ---------------------------------
 	// Parametric search
@@ -3915,11 +3978,13 @@ WPViews.WPAEditScreen = function( $ ) {
 	// Toolset compatibility
 	// ---------------------------------
 	
+	/**
+     * Interoperation with other Toolset plugins.
+     *
+     * @since unknown
+	 * @since 2.4.0 Removed the CRED buttons initialization as CRED itself manages that
+     */
 	self.toolset_compatibility = function() {
-		// CRED plugin
-		if ( typeof cred_cred != 'undefined' ) {
-			cred_cred.posts();
-		}
 		// Layouts plugin
 		if ( $( '.js-wpv-display-in-iframe' ).length == 1 ) {
 			if ( $( '.js-wpv-display-in-iframe' ).val() == 'yes' ) {
@@ -3940,15 +4005,23 @@ WPViews.WPAEditScreen = function( $ ) {
 	
 	self.init_third_party = function() {
 		// toolset_select2 in orderby dropdowns
-		$( 'select.js-wpv-posts-orderby' ).toolset_select2(
-			{ 
-				width:				'resolve',
-				dropdownAutoWidth:	true 
-			}
-		)
-		.data( 'toolset_select2' )
+		var orderby_toolset_select2 = $( 'select.js-wpv-posts-orderby' )
+			.toolset_select2(
+				{ 
+					width:				'resolve',
+					dropdownAutoWidth:	true 
+				}
+			);
+		// Add specific classnames to those select2 instances dropdown and container:
+		// https://git.onthegosystems.com/toolset/toolset-common/wikis/toolset-select2#styling-a-toolset_select2-instance
+		orderby_toolset_select2
+			.data( 'toolset_select2' )
 				.$dropdown
 					.addClass( 'toolset_select2-dropdown-in-setting' );
+		orderby_toolset_select2
+			.data( 'toolset_select2' )
+				.$container
+					.addClass( 'toolset_select2-container-in-setting' );
 		// Admin menu link target
 		$( '#adminmenu li.current a' ).attr( 'href', $( '#adminmenu li.current a' ).attr( 'href' ) + '&view_id=' + self.view_id );
 	};
@@ -3984,24 +4057,24 @@ WPViews.WPAEditScreen = function( $ ) {
 			},
 			buttons:[
 				{
-					class:	'button-secondary',
-					text:	wpv_editor_strings.dialog.cancel,
+					class:	'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-apply-post-types-to-archive-loop',
+					text:	wpv_editor_strings.dialog.apply,
 					click:	function() {
-						$( this ).dialog( "close" );
+						self.apply_post_types_to_archive_loop();
 					}
 				},
 				{
-					class:	'button-secondary',
+					class:	'toolset-shortcode-gui-dialog-button-align-right button-secondary',
 					text:	wpv_editor_strings.dialog.restore,
 					click:	function() {
 						self.restore_post_types_to_archive_loop();
 					}
 				},
 				{
-					class:	'button-primary js-wpv-apply-post-types-to-archive-loop',
-					text:	wpv_editor_strings.dialog.apply,
+					class:	'button-secondary',
+					text:	wpv_editor_strings.dialog.cancel,
 					click:	function() {
-						self.apply_post_types_to_archive_loop();
+						$( this ).dialog( "close" );
 					}
 				}
 			]
@@ -4026,17 +4099,17 @@ WPViews.WPAEditScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-insert-archive-pagination',
+					text: wpv_editor_strings.dialog_pagination.insert,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: wpv_editor_strings.dialog.cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-insert-archive-pagination',
-					text: wpv_editor_strings.dialog_pagination.insert,
-					click: function() {
-
 					}
 				}
 			]
@@ -4072,17 +4145,17 @@ WPViews.WPAEditScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary',
+					text: wpv_editor_strings.dialog_sorting.insert,
+					click: function() {
+						self.insert_sorting_controls();
+					}
+				},
+				{
 					class: 'button-secondary toolset-shortcode-gui-dialog-button-close',
 					text: wpv_editor_strings.dialog.cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary',
-					text: wpv_editor_strings.dialog_sorting.insert,
-					click: function() {
-						self.insert_sorting_controls();
 					}
 				}
 			]
@@ -4113,17 +4186,17 @@ WPViews.WPAEditScreen = function( $ ) {
 			},
 			buttons:[
 				{
-					class: 'button-secondary js-wpv-frontend-events-close',
-					text: wpv_editor_strings.dialog_close,
-					click: function() {
-						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-frontend-events-insert',
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-frontend-events-insert',
 					text: wpv_editor_strings.add_event_trigger_callback_dialog_insert,
 					click: function() {
 						self.insert_frontend_event_handler();
+					}
+				},
+				{
+					class: 'button-secondary js-wpv-frontend-events-close',
+					text: wpv_editor_strings.dialog.cancel,
+					click: function() {
+						$( this ).dialog( "close" );
 					}
 				}
 			]

@@ -677,24 +677,22 @@ class WPV_Pagination_Embedded {
 	}
 	
 	/**
-	* wpv_pager_nav_dropdown_callback
-	*
-	* Callback for the [wpv-pager-nav-dropdown] shortcode.
-	*
-	* Displays a select dropdown for Views pagination.
-	*
-	* @param class
-	*
-	* @since 1.11
-	*
-	* @todo remember that the classname js-wpv-page-selector does nothing as of now...
-	*/
+	 * Callback for the [wpv-pager-nav-dropdown] shortcode, displays a select dropdown for Views pagination.
+	 *
+	 * @param class
+	 *
+	 * @since 1.11.0
+	 * @since 2.4.0 Added the output attribute
+	 *
+	 * @todo remember that the classname js-wpv-page-selector does nothing as of now...
+	 */
 	
 	function wpv_pager_nav_dropdown_callback( $atts ) {
 		extract(
 			shortcode_atts(
 				array(
 					'class'	=> '',
+					'output' => '',
 				), 
 				$atts
 			)
@@ -710,8 +708,13 @@ class WPV_Pagination_Embedded {
 		if ( ! empty( $class ) ) {
 			$class = ' ' . $class;
 		}
-		
-		$return .= '<select class="wpv-page-selector-' . esc_attr( $view_count ) . ' js-wpv-page-selector"' 
+
+		$class_array = array( 'wpv-page-selector-' . esc_attr( $view_count ), 'js-wpv-page-selector' );
+		if ( 'bootstrap' == $output ) {
+			array_push( $class_array, 'form-control' );
+		}
+
+		$return .= '<select class="' . implode( ' ', $class_array ) .'"'
 			. ' data-viewnumber="' 		. esc_attr( $view_count ) . '"'
 			. '>';
 		for ( $i = 1; $i < $max_page + 1; $i++ ) {
@@ -723,22 +726,25 @@ class WPV_Pagination_Embedded {
 	}
 	
 	/**
-	* wpv_pager_nav_links_callback
-	*
-	* Callback for the [wpv-pager-nav-links] shortcode, for Views pagination.
-	*
-	* @param wrapper
-	* @param anchor_text
-	* @param anchor_title
-	*
-	* @since 1.11
-	*
-	* @todo Bring in sync with the paginate_links methos, to have a single, shaed mechanism for Views an WPAs:
-	*     - apply the classname wpv-pagination-nav-links-item-current to the current list item.
-	*         (mind the wpv_page_current classnme)
-	*     - apply the classname wpv-pagination-link-current to the current anchor.
-	*         (mind there is nor a equivalent yet)
-	*/
+	 * Callback for the [wpv-pager-nav-links] shortcode, for Views pagination.
+	 *
+	 * @param wrapper
+	 * @param anchor_text
+	 * @param anchor_title
+	 *
+	 * @since 1.11.0
+	 * @since 2.4.0 Added the output attribute
+	 * @since 2.4.0 Added the anchor_class attribute
+	 * @since 2.4.0 Added the previous_next_links attribute
+	 * @since 2.4.0 Added the force_previous_next attribute
+	 * @since 2.4.0 Added the links_type attribute
+	 *
+	 * @todo Bring in sync with the paginate_links methos, to have a single, shaed mechanism for Views an WPAs:
+	 *     - apply the classname wpv-pagination-nav-links-item-current to the current list item.
+	 *         (mind the wpv_page_current classnme)
+	 *     - apply the classname wpv-pagination-link-current to the current anchor.
+	 *         (mind there is nor a equivalent yet)
+	 */
 	
 	function wpv_pager_nav_links_callback( $atts ) {
 		extract(
@@ -746,6 +752,7 @@ class WPV_Pagination_Embedded {
 				array(
 					'ul_class'		=> '',
 					'li_class'		=> '',
+					'anchor_class'	=> '',
 					'current_type'	=> 'text',
 					
 					'anchor_text'	=> __( '%%PAGE%%', 'wpv-views' ),
@@ -756,8 +763,13 @@ class WPV_Pagination_Embedded {
 					'step'					=> false,
 					'reach'					=> false,
 					'ellipsis'				=> '...',
-					
-					'prev_next'				=> 'none'// To be implemented: can be 'none', 'maybe' or 'force'
+
+					'output' => '',
+					'previous_next_links' => 'false',
+					'force_previous_next' => 'false',
+					'prev_next'				=> 'none',// To be implemented: can be 'none', 'maybe' or 'force'
+
+					'links_type'	=> '',
 				), 
 				$atts
 			)
@@ -775,12 +787,21 @@ class WPV_Pagination_Embedded {
 		}
 		
 		$ul_class_array = array( 'wpv-pagination-nav-links-container', 'js-wpv-pagination-nav-links-container' );
+		if ( 'bootstrap' == $output ) {
+			array_push( $ul_class_array, 'pagination' );
+		}
+		if ( 'bootstrap' == $output && 'dots' == $links_type ) {
+			array_push( $ul_class_array, 'pagination-dots' );
+		}
 		if ( ! empty( $ul_class ) ) {
 			$ul_class_array = array_merge( $ul_class_array, array_map( 'esc_attr', explode( ' ', $ul_class ) ) );
 		}
 		$ul_class_array = array_values( $ul_class_array );
 		
 		$li_class_array = array( 'wpv-pagination-nav-links-item', 'js-wpv-pagination-nav-links-item' );
+		if ( 'bootstrap' == $output ) {
+			array_push( $li_class_array, 'page-item' );
+		}
 		if ( ! empty( $li_class ) ) {
 			$li_class_array = array_merge( $li_class_array, array_map( 'esc_attr', explode( ' ', $li_class ) ) );
 		}
@@ -791,7 +812,7 @@ class WPV_Pagination_Embedded {
 		$needs_ellipsis = true;
 		
 		$return .= '<ul class="' . implode( ' ', $ul_class_array ) . '">';
-                
+
 		for ( $i = 1; $i < $max_page + 1; $i++ ) {
 			$is_visible = false;
 			if ( 
@@ -829,6 +850,38 @@ class WPV_Pagination_Embedded {
  				}
 			}
 			if ( $is_visible ) {
+				// If we are rendering the pagination for the first page
+				if( 1 == $i && 'true' == $previous_next_links ) {
+					// ... and the first page is the current page and we are not forcing previous link
+					if ( $i == $page && 'false' == $force_previous_next ) {
+						// ... don't do anything
+						$return .= '';
+					} else {
+						// ... otherwise render the the previous link
+						$prev_link_class_array = array();
+
+						if ( 'bootstrap' == $output ) {
+							array_push( $prev_link_class_array, 'page-item' );
+						}
+
+						if ( $i == $page ) {
+							array_push( $prev_link_class_array, 'disabled' );
+						}
+
+						$args = array(
+							'style' => '',
+							'class' => '',
+							'force'	=> $force_previous_next,
+						);
+						$prev_link_class_array = array_values( $prev_link_class_array );
+						$name = 'pagination_control_for_' . 'previous_link' . '_' . md5( isset( $atts['text_for_previous_link'] ) ? $atts['text_for_previous_link'] : '' );
+						$string = isset( $atts['text_for_previous_link'] ) ? __( $atts['text_for_previous_link'], 'wpv-views' ) : __( 'Previous', 'wpv-views' );
+						$context = 'View ' . $view_settings['view_slug'];
+						$previous_link_text = wpv_translate( $name, $string, false, $context );
+						$return .= '<li ' . ' class="' . implode( ' ', $prev_link_class_array ) . '"' . '>' . $this->wpv_pager_prev_page_callback( $args, $previous_link_text ) . '</li>';
+					}
+				}
+
 				$needs_ellipsis = true;
 				$anchor_text_i = str_replace( '%%PAGE%%', $i, $anchor_text );
 				$anchor_title_i = str_replace( '%%PAGE%%', $i, $anchor_title );
@@ -837,8 +890,19 @@ class WPV_Pagination_Embedded {
 				$li_current_class_array[] = 'wpv-page-link-' . $view_count . '-' . $i;
 				$li_current_class_array[] = 'js-wpv-page-link-' . $view_count . '-' . $i;
 				
+				$anchor_class_array = array( 'wpv-filter-pagination-link', 'js-wpv-pagination-link' );
+				if ( ! empty( $anchor_class ) ) {
+					$anchor_class_array = array_merge( $anchor_class_array, array_map( 'esc_attr', explode( ' ', $anchor_class ) ) );
+				}
+				if ( 'bootstrap' == $output ) {
+					array_push( $anchor_class_array, 'page-link' );
+					if ( 'dots' == $links_type ) {
+						$current_type = 'link';
+					}
+				}
+				$anchor_class_array = array_values( $anchor_class_array );
 				$li_current_content = '<a'
-					. ' class="wpv-filter-pagination-link js-wpv-pagination-link"'
+					. ' class="' . implode( ' ', $anchor_class_array ) . '"'
 					. ' title="'				. $anchor_title_i . '"'
 					. ' href="'					. esc_url( $this->get_pager_permalink( $i, $view_count ) ) . '"'
 					. ' data-viewnumber="' 		. esc_attr( $view_count ) . '"'
@@ -850,6 +914,15 @@ class WPV_Pagination_Embedded {
 				if ( $i == $page ) {
 					$li_current_class_array[] = 'wpv_page_current';
 					$li_current_class_array[] = 'wpv-pagination-nav-links-item-current';
+
+					if ( 'bootstrap' == $output ) {
+						if( 'dots' != $links_type ) {
+						$li_current_class_array[] = 'active';
+						} else {
+							$li_current_class_array[] = 'active-dot';
+						}
+					}
+
 					if ( $current_type == 'text' ) {
 						$li_current_content = '<span'
 						. ' class="wpv-filter-pagination-link"'
@@ -863,6 +936,38 @@ class WPV_Pagination_Embedded {
 				$return  .= '<li' . $li_current_class_string . '>' 
 					. $li_current_content 
 					. '</li>';
+
+				// If we are rendering the pagination for the last page
+				if( $i == $max_page && 'true' == $previous_next_links ) {
+					// ... and the last page is the current page and we are not forcing next link
+					if ( $i == $page && 'false' == $force_previous_next ) {
+						// ... don't do anything
+						$return .= '';
+					} else {
+						// ... otherwise render the the next link
+						$next_link_class_array = array();
+
+						if ( 'bootstrap' == $output ) {
+							array_push( $next_link_class_array, 'page-item' );
+						}
+
+						if ( $i == $page ) {
+							array_push( $next_link_class_array, 'disabled' );
+						}
+
+						$args = array(
+							'style' => '',
+							'class' => '',
+							'force'	=> $force_previous_next,
+						);
+						$next_link_class_array = array_values( $next_link_class_array );
+						$name = 'pagination_control_for_' . 'next_link' . '_' . md5( isset( $atts['text_for_previous_link'] ) ? $atts['text_for_next_link'] : '' );
+						$string = isset( $atts['text_for_next_link'] ) ? __( $atts['text_for_next_link'], 'wpv-views' ) : __( 'Next', 'wpv-views' );
+						$context = 'View ' . $view_settings['view_slug'];
+						$next_link_text = wpv_translate( $name, $string, false, $context );
+						$return .= '<li ' . ' class="' . implode( ' ', $next_link_class_array ) . '"' . '>' . $this->wpv_pager_next_page_callback( $args, $next_link_text ) . '</li>';
+					}
+				}
 			} else if ( $needs_ellipsis ) {
 				$needs_ellipsis = false;
 				$return  .= '<li class="' . implode( ' ', $li_class_array ) . '">' 
@@ -1050,7 +1155,10 @@ class WPV_Pagination_Embedded {
 	*     @type string $anchor_title       The anchor title for each page link. Default is '%%PAGE%%.
 	* }
 	*
-	* @since 2.1
+	* @since 2.1.0
+	* @since 2.4.0 Added the output attribute
+	* @since 2.4.0 Added the previous_next_links attribute
+	* @since 2.4.0 Added the force_previous_next attribute
 	*/
 	
 	function wpv_pager_archive_nav_links_callback( $atts ) {
@@ -1073,10 +1181,27 @@ class WPV_Pagination_Embedded {
 					'current_type'	=> 'text',
 					'anchor_text'	=> __( '%%PAGE%%', 'wpv-views' ),
 					'anchor_title'	=> __( '%%PAGE%%', 'wpv-views' ),
+
+					'output' => '',
+					'previous_next_links' => 'false',
+					'force_previous_next' => 'false',
 				), 
 				$atts
 			)
 		);
+
+		$view_id = apply_filters( 'wpv_filter_wpv_get_current_view', null );
+		$view_settings = apply_filters( 'wpv_filter_wpv_get_object_settings', array() );
+		$view_unique_hash = apply_filters( 'wpv_filter_wpv_get_object_unique_hash', '', $view_settings );
+
+		$name = 'pagination_control_for_' . 'previous_link' . '_' . md5( isset( $atts['text_for_previous_link'] ) ? $atts['text_for_previous_link'] : '' );
+		$string = isset( $atts['text_for_previous_link'] ) ? __( $atts['text_for_previous_link'], 'wpv-views' ) : $prev_text;
+		$context = 'View ' . $view_settings['view_slug'];
+		$previous_link_text = wpv_translate( $name, $string, false, $context );
+
+		$name = 'pagination_control_for_' . 'next_link' . '_' . md5( isset( $atts['text_for_previous_link'] ) ? $atts['text_for_next_link'] : '' );
+		$string = isset( $atts['text_for_next_link'] ) ? __( $atts['text_for_next_link'], 'wpv-views' ) : $next_text;
+		$next_link_text = wpv_translate( $name, $string, false, $context );
 		
 		$args = array(
 			'type'				=> $type,
@@ -1089,9 +1214,9 @@ class WPV_Pagination_Embedded {
 			'step'				=> $step,
 			'ellipsis'			=> $ellipsis,
 			
-			'prev_next'			=> $prev_next,
-			'prev_text'			=> $prev_text,
-			'next_text'			=> $next_text,
+			'prev_next'			=> ( 'true' == $previous_next_links ) ? ( 'true' == $force_previous_next ) ? 'force' : 'maybe' : $prev_next,
+			'prev_text'			=> $previous_link_text,
+			'next_text'			=> $next_link_text,
 			
 			'current_type'		=> $current_type,
 			'anchor_text'		=> $anchor_text,
@@ -1103,12 +1228,13 @@ class WPV_Pagination_Embedded {
 			'a_class_force'		=> 'wpv-archive-pagination-link js-wpv-archive-pagination-link',
 			'a_class_current'	=> 'wpv-archive-pagination-link-current',
 			'span_class_force'	=> 'wpv-archive-pagination-link wpv-archive-pagination-link-current',
-			'ellipsis_class_force' => 'wpv-archive-pagination-link wpv-archive-pagination-link-ellipsis'
+			'ellipsis_class_force' => 'wpv-archive-pagination-link wpv-archive-pagination-link-ellipsis',
+
+			'output' => $output,
+			'previous_next_links' => $previous_next_links,
+			'force_previous_next' => $force_previous_next,
 		);
-		
-		$view_id			= apply_filters( 'wpv_filter_wpv_get_current_view', null );
-		$view_settings		= apply_filters( 'wpv_filter_wpv_get_object_settings', array() );
-		$view_unique_hash	= apply_filters( 'wpv_filter_wpv_get_object_unique_hash', '', $view_settings );
+
 		$args['viewnumber']	= $view_unique_hash;
 		
 		$view_url_data					= get_view_allowed_url_parameters( $view_id );
@@ -1840,6 +1966,9 @@ class WPV_Pagination_Embedded {
 		if ( ! empty( $args['ul_class_force'] ) ) {
 			$ul_class_array = array_map( 'esc_attr', explode( ' ', $args['ul_class_force'] ) );
 		}
+		if ( 'bootstrap' == $args['output'] ) {
+			array_push( $ul_class_array, 'pagination' );
+		}
 		if ( ! empty( $args['ul_class'] ) ) {
 			$ul_class_array = array_merge( $ul_class_array, array_map( 'esc_attr', explode( ' ', $args['ul_class'] ) ) );
 		}
@@ -1848,6 +1977,9 @@ class WPV_Pagination_Embedded {
 		$li_class_array = array();
 		if ( ! empty( $args['li_class_force'] ) ) {
 			$li_class_array = array_map( 'esc_attr', explode( ' ', $args['li_class_force'] ) );
+		}
+		if ( 'bootstrap' == $args['output'] ) {
+			array_push( $li_class_array, 'page-item' );
 		}
 		if ( ! empty( $args['li_class'] ) ) {
 			$li_class_array = array_merge( $li_class_array, array_map( 'esc_attr', explode( ' ', $args['li_class'] ) ) );
@@ -1914,7 +2046,16 @@ class WPV_Pagination_Embedded {
 		$link_suffix = '';
 		if ( 'list' == $args['type'] ) {
 			$link_prefix = "<li class='" . implode( ' ', $li_class_array ) . "'>";
-			$link_prefix_current = "<li class='" . implode( ' ', $li_class_array ) . " " . $args['li_class_current'] . "'>";
+			$li_class_array_current = $li_class_array;
+			if ( 'bootstrap' == $args['output'] ) {
+				array_push( $li_class_array_current, 'active' );
+			}
+			$link_prefix_current = "<li class='" . implode( ' ', $li_class_array_current ) . " " . $args['li_class_current'] . "'>";
+			$li_class_array_current_previous_next = $li_class_array;
+			if ( 'bootstrap' == $args['output'] ) {
+				array_push( $li_class_array_current_previous_next, 'disabled' );
+			}
+			$link_prefix_current_previous_next = "<li class='" . implode( ' ', $li_class_array_current_previous_next ) . " " . $args['li_class_current'] . "'>";
 			$link_suffix = "</li>";
 		}
 		
@@ -1954,7 +2095,7 @@ class WPV_Pagination_Embedded {
 							. '</a>'
 							. $link_suffix;
 					} else if ( 'force' == $args['prev_next'] ) {
-						$page_links[] = $link_prefix_current
+						$page_links[] = $link_prefix_current_previous_next
 							. '<span'
 							. ' class="wpv-archive-pagination-links-prev-link wpv-archive-pagination-links-prev-link-first"'
 							. '>' 
@@ -2070,7 +2211,7 @@ class WPV_Pagination_Embedded {
 							. '</a>'
 							. $link_suffix;
 					} else if ( 'force' == $args['prev_next'] ) {
-						$page_links[] = $link_prefix_current
+						$page_links[] = $link_prefix_current_previous_next
 							. '<span'
 							. ' class="wpv-archive-pagination-links-next-link wpv-archive-pagination-links-next-link-last"'
 							. '>' 

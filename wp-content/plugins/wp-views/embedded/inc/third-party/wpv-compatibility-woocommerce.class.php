@@ -188,14 +188,7 @@ class WPV_Compatibility_WooCommerce {
 				case 'views-editor':
 					break;
 				case 'ct-editor':
-					$current_ct = isset( $_GET['ct_id' ] ) ? (int) $_GET['ct_id' ] : 0;
-					$current_ct_singular_assigned_post_types = array();
-					if ( $current_ct ) {
-						$current_ct_object = new WPV_Content_Template_Embedded( $current_ct );
-						$current_ct_singular_assigned = $current_ct_object->get_assigned_single_post_types();
-						$current_ct_singular_assigned_post_types = wp_list_pluck( $current_ct_singular_assigned, 'post_type_name' );
-					}
-					if ( in_array( 'product', $current_ct_singular_assigned_post_types ) ) {
+					if ( $this->ct_is_assigned_to_product_post_type( (int) wpcf_getget( 'ct_id', 0 ) ) ) {
 						$links = '';
 						if ( $this->is_installer_installed ) {
 							$links .= '<a href="'
@@ -300,7 +293,45 @@ class WPV_Compatibility_WooCommerce {
 		}
 		return $notices;
 	}
-	
+
+	/**
+	 * Determine if the given Content Template is assigned to the Products post type.
+	 *
+	 * @param integer   $current_ct     The Content Template under review
+	 * @param string    $usage          The usage of the Content Template we check for. If empty, the function checks for both usages.
+	 *
+	 * @return bool
+	 */
+	private function ct_is_assigned_to_product_post_type( $current_ct, $usage = '' ) {
+		$is_assigned = false;
+		$current_ct_assigned_post_types = array();
+		if ( $current_ct ) {
+			$current_ct_object = new WPV_Content_Template_Embedded( $current_ct );
+			$current_ct_singular_assigned = $current_ct_object->get_assigned_single_post_types();
+			$current_ct_singular_assigned_post_types = wp_list_pluck( $current_ct_singular_assigned, 'post_type_name' );
+			$current_ct_plural_assigned = $current_ct_object->get_assigned_loops( 'post_type' );
+			$current_ct_plural_assigned_post_types = wp_list_pluck( $current_ct_plural_assigned, 'post_type_name' );
+
+			switch ( $usage ) {
+				case 'single':
+					$current_ct_assigned_post_types = $current_ct_singular_assigned_post_types;
+					break;
+				case 'archive':
+					$current_ct_assigned_post_types = $current_ct_plural_assigned_post_types;
+					break;
+				default:
+					$current_ct_assigned_post_types = array_unique( array_merge( $current_ct_singular_assigned_post_types, $current_ct_plural_assigned_post_types ) );
+					break;
+			}
+		}
+
+		if ( in_array( 'product', $current_ct_assigned_post_types ) ) {
+			$is_assigned = true;
+		}
+
+		return $is_assigned;
+	}
+
 	public function wpv_wcv_missing_mandatory_dismiss() {
 		
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -344,32 +375,23 @@ class WPV_Compatibility_WooCommerce {
 		if ( apply_filters( 'wpv_filter_wpv_is_dismissed_notice', false, array( 'id' => 'wc_active_wcv_active_wrong_single_template', 'type' => 'global' ) ) ) {
 			return;
 		}
-		
-		$current_ct = isset( $_GET['ct_id' ] ) ? (int) $_GET['ct_id' ] : 0;
-		$current_ct_singular_assigned_post_types = array();
-		if ( $current_ct ) {
-			$current_ct_object = new WPV_Content_Template_Embedded( $current_ct );
-			$current_ct_singular_assigned = $current_ct_object->get_assigned_single_post_types();
-			$current_ct_singular_assigned_post_types = wp_list_pluck( $current_ct_singular_assigned, 'post_type_name' );
-		}
-		if ( ! in_array( 'product', $current_ct_singular_assigned_post_types ) ) {
-			return;
-		}
-		
-		$stored_wcv_product_single_template = get_option( WPV_Compatibility_WooCommerce::WCV_SINGLE_TEMPLATE_SETTING, false );
-		if (
-			is_array( $stored_wcv_product_single_template )
-			&& isset( $stored_wcv_product_single_template[ $this->current_theme ] )
-		) {
-			$stored_wcv_product_single_template_path    = $stored_wcv_product_single_template[ $this->current_theme ];
-			$valid_wcv_product_single_template_path     = WOOCOMMERCE_VIEWS_PLUGIN_PATH . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'single-product.php';
-			if ( $stored_wcv_product_single_template_path == $valid_wcv_product_single_template_path ) {
-				return;
+
+		if ( $this->ct_is_assigned_to_product_post_type( (int) wpcf_getget( 'ct_id', 0 ), 'single' ) ) {
+			$stored_wcv_product_single_template = get_option( WPV_Compatibility_WooCommerce::WCV_SINGLE_TEMPLATE_SETTING, false );
+			if (
+				is_array( $stored_wcv_product_single_template )
+				&& isset( $stored_wcv_product_single_template[ $this->current_theme ] )
+			) {
+				$stored_wcv_product_single_template_path    = $stored_wcv_product_single_template[ $this->current_theme ];
+				$valid_wcv_product_single_template_path     = WOOCOMMERCE_VIEWS_PLUGIN_PATH . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'single-product.php';
+				if ( $stored_wcv_product_single_template_path == $valid_wcv_product_single_template_path ) {
+					return;
+				}
 			}
+
+			$this->is_asset_required = true;
+			add_filter( 'wptoolset_filter_admin_notices', array( $this, 'recommend_update_woocommerceviews_single_settings' ) );
 		}
-		
-		$this->is_asset_required = true;
-		add_filter( 'wptoolset_filter_admin_notices', array( $this, 'recommend_update_woocommerceviews_single_settings' ) );
 	}
 	
 	/**
@@ -474,9 +496,11 @@ class WPV_Compatibility_WooCommerce {
 	 * @since 2.2.1
 	 */
 	public function recommend_update_woocommerceviews_archive() {
+		$page = wpcf_getget( 'page', '' );
+
 		if (
-			! isset( $_GET['page'] )
-			|| ! in_array( $_GET['page'], array( 'view-archives-editor' ) )
+			'' == $page
+			|| ! in_array( $page, array( 'view-archives-editor', 'ct-editor' ) )
 		) {
 			return;
 		}
@@ -484,16 +508,23 @@ class WPV_Compatibility_WooCommerce {
 		if ( apply_filters( 'wpv_filter_wpv_is_dismissed_notice', false, array( 'id' => 'wc_active_wcv_active_wrong_archive_template', 'type' => 'global' ) ) ) {
 			return;
 		}
-		
-		$current_wpa = isset( $_GET['view_id' ] ) ? (int) $_GET['view_id' ] : 0;
-		$current_wpa_archive_assigned_post_types = array();
-		if ( $current_wpa ) {
-			$current_wpa_object = new WPV_WordPress_Archive_Embedded( $current_wpa );
-			$current_wpa_archive_assigned = $current_wpa_object->get_assigned_loops( 'post_type' );
-			$current_wpa_archive_assigned_post_types = wp_list_pluck( $current_wpa_archive_assigned, 'post_type_name' );
-		}
-		if ( ! in_array( 'product', $current_wpa_archive_assigned_post_types ) ) {
-			return;
+
+		if ( 'view-archives-editor' == $page ) {
+			$current_wpa = isset( $_GET['view_id' ] ) ? (int) $_GET['view_id' ] : 0;
+			$current_wpa_archive_assigned_post_types = array();
+			if ( $current_wpa ) {
+				$current_wpa_object = new WPV_WordPress_Archive_Embedded( $current_wpa );
+				$current_wpa_archive_assigned = $current_wpa_object->get_assigned_loops( 'post_type' );
+				$current_wpa_archive_assigned_post_types = wp_list_pluck( $current_wpa_archive_assigned, 'post_type_name' );
+			}
+			if ( ! in_array( 'product', $current_wpa_archive_assigned_post_types ) ) {
+				return;
+			}
+		} else {
+			// $page == 'ct-editor'
+			if ( ! $this->ct_is_assigned_to_product_post_type( (int) wpcf_getget( 'ct_id', 0 ), 'archive' ) ) {
+				return;
+			}
 		}
 		
 		$stored_wcv_product_archive_template = get_option( WPV_Compatibility_WooCommerce::WCV_ARCHIVE_TEMPLATE_SETTING, false );

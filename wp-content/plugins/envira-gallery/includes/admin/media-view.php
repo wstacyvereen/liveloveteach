@@ -584,11 +584,20 @@ class Envira_Gallery_Media_View {
 		<script type="text/html" id="tmpl-envira-gallery-item">
 			<# if ( ! data.is_dir ) { #>
 				<div class="attachment-preview js--select-attachment type-image subtype-<# data.mime_type #>" data-id="{{ data.id }}" data-is-dir="{{ data.is_dir }}">
+					<# if ( data.thumbnail.length > 0 ) { #>
 					<div class="thumbnail">
 						<div class="centered">
 							<img src="{{ data.thumbnail }}" draggable="false" alt="{{ data.title }}" />
 						</div>
 					</div>
+					<# } else { #>
+					<div class="thumbnail envira-title-only">
+						<div class="centered">
+							<span class="dashicons dashicons-format-image"></span>
+							<span>{{ data.title }}</span>
+						</div>
+					</div>
+					<# } #>
 				</div>
 				<button type="button" class="button-link check" tabindex="-1">
 					<span class="media-modal-icon"></span>

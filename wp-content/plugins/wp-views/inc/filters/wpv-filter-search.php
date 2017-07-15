@@ -327,6 +327,16 @@ class WPV_Search_Filter {
 			'summary'		=> wpv_get_filter_post_search_summary_txt( $filter_search ),
 			'parametric'	=> $parametric_search_hints
 		);
+		
+		if ( isset( $_POST['update_query_filters_list'] ) ) {
+			// When adding a post search filer from the parametric search workflow, we need to update the query filters list too
+			// @todo This will not be needed once we get the post search filter integrated with the other paraetric filters
+			ob_start();
+			wpv_display_filters_list( $view_array );
+			$data['query_filters'] = ob_get_contents();
+			ob_end_clean();
+		}
+		
 		wp_send_json_success( $data );
 	}
 	

@@ -487,10 +487,17 @@ class WP_Views_Integration_API {
 						echo sprintf( __( 'Your theme has registered the <strong>%s</strong> options framework to be used with Views.', 'wpv-views' ), $framework_data['name'] );
 					}
 					echo WPV_MESSAGE_SPACE_CHAR;
+					$link_open = sprintf(
+						'<a href="' . WPV_LINK_FRAMEWORK_INTEGRATION_DOCUMENTATION . '" title="%s">',
+						esc_attr( __( 'Documentation for Views theme framework integration', 'wpv-views' ) )
+					);
+					$link_close = '</a>';
 					echo sprintf(
-						__( 'For details, check the <a href="%s" title="Documentation for Views theme framework integration">documentation page</a>', 'wpv-views' ),
-						WPV_LINK_FRAMEWORK_INTEGRATION_DOCUMENTATION
-					); 
+						__( 'For details, check the %sdocumentation page%s', 'wpv-views' ),
+						$link_open,
+						$link_close
+					);
+
 					?>
 				</p>
 				<?php
@@ -574,10 +581,16 @@ class WP_Views_Integration_API {
 		?>
 		<p>
 			<?php
+			$link_open = sprintf(
+				'<a href="' . WPV_LINK_FRAMEWORK_INTEGRATION_DOCUMENTATION . '" title="%s">',
+				esc_attr( __( 'Documentation for Views theme framework integration', 'wpv-views' ) )
+			);
+			$link_close = '</a>';
 			echo sprintf(
-				__( 'For details, check the <a href="%s" title="Documentation for Views theme framework integration">documentation page</a>', 'wpv-views' ),
-				WPV_LINK_FRAMEWORK_INTEGRATION_DOCUMENTATION
-			); 
+				__( 'For details, check the %sdocumentation page%s', 'wpv-views' ),
+				$link_open,
+				$link_close
+			);
 			?>
 		</p>	
 		<?php
@@ -619,10 +632,16 @@ class WP_Views_Integration_API {
 		?>
 		<p>
 			<?php
+			$link_open = sprintf(
+				'<a href="' . WPV_LINK_FRAMEWORK_INTEGRATION_DOCUMENTATION . '" title="%s">',
+				esc_attr( __( 'Documentation for Views theme framework integration', 'wpv-views' ) )
+			);
+			$link_close = '</a>';
 			echo sprintf(
-				__( 'For details, check the <a href="%s" title="Documentation for Views theme framework integration">documentation page</a>', 'wpv-views' ),
-				WPV_LINK_FRAMEWORK_INTEGRATION_DOCUMENTATION
-			); 
+				__( 'For details, check the %sdocumentation page%s', 'wpv-views' ),
+				$link_open,
+				$link_close
+			);
 			?>
 		</p>	
 		<?php

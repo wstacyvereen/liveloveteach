@@ -2109,8 +2109,10 @@ class WP_Views {
 					// Get templates for items (differentiated by their indices, see [wpv-item] documentation).
 					$tmpl = $matches[2];
 					$item_indexes = $this->_get_item_indexes( $tmpl );
+					
+					$query_type = apply_filters( 'wpv_filter_wpv_get_query_type', 'posts', $view_id );
 
-					if ( $view_settings['query_type'][0] == 'posts' ) {
+					if ( $query_type == 'posts' ) {
 						// get the posts using the query settings for this view.
 
 						$archive_query = null;
@@ -2138,17 +2140,6 @@ class WP_Views {
 
 						toolset_wplog( 'Found '. count( $items ) . ' posts', null, __FILE__, 'WP_Views::render_view', 1686 );
 
-						/*
-						if ( $wplogger->isMsgVisible( WPLOG_DEBUG ) ) {
-							// simplify the output
-							$out_items = array();
-							foreach( $items as $item ) {
-								$out_items[] = array( 'ID' => $item->ID, 'post_title' => $item->post_title );
-							}
-							$wplogger->log( $out_items, WPLOG_DEBUG );
-						}
-						*/
-
 					}
 
 					// save original post
@@ -2157,12 +2148,10 @@ class WP_Views {
 					$tmp_authordata = ( isset( $authordata ) && is_object( $authordata ) ) ? clone $authordata : null;
 					$tmp_id = $id;
 
-					if ( $view_settings['query_type'][0] == 'taxonomy') {
+					if ( $query_type == 'taxonomy') {
 						$items = $this->taxonomy_query( $view_settings );
 						toolset_wplog( $items, 'debug', __FILE__, 'WP_Views::render_view', 1709 );
-						// taxonomy views can be recursive so remove from the processed array
-						//unset($processed_views[$view_caller_id][$hash]);
-					} else if ( $view_settings['query_type'][0] == 'users') {
+					} else if ( $query_type == 'users') {
 						$items = $this->users_query( $view_settings );
 						toolset_wplog( $items, 'debug', __FILE__, 'WP_Views::render_view', 1714 );
 					}
@@ -2187,30 +2176,41 @@ class WP_Views {
 						// [wpv-item index=xx] uses base 1
 						$index++;
 						$index = strval( $index );
-
-						if ( $view_settings['query_type'][0] == 'posts' ) {
-
-							$post = clone $items[ $i ];
-							$authordata = new WP_User( $post->post_author );
-							$id = $post->ID;
-							$temp_variables = $this->variables;
-							$this->variables = array();
-							do_action( 'wpv-before-display-post', $post, $view_id );
-
-						} elseif ( $view_settings['query_type'][0] == 'taxonomy' ) {
-
-							$this->taxonomy_data['term'] = $items[ $i ];
-							do_action( 'wpv-before-display-taxonomy', $items[ $i ], $view_id );
-
-						} elseif ( $view_settings['query_type'][0] == 'users' ) {
-
-							$user_id = $items[ $i ]->ID;
-							$user_meta = get_user_meta( $user_id );
-							$items[ $i ]->meta = $user_meta;
-							$this->users_data['term'] = $items[ $i ];
-							do_action( 'wpv-before-display-user', $items[ $i ], $view_id );
+						
+						/**
+						 * Execute an action before each of the View loop items is being rendered.
+						 *
+						 * @param object $items[$i]  The object about to be displated, can be a WP_Post, a WP_Term, or a WP_User
+						 * @param string $query_type The type of query for the current loop: 'posts', 'taxonomy', or 'users'
+						 * @param int    $view_id    The ID of the View being looped
+						 *
+						 * @since 2.4.0
+						 */
+						do_action( 'wpv_action_wpv_loop_before_display_item', $items[ $i ], $query_type, $view_id );
+						
+						switch ( $query_type ) {
+							case 'posts':
+								$post = clone $items[ $i ];
+								$authordata = new WP_User( $post->post_author );
+								$id = $post->ID;
+								$temp_variables = $this->variables;
+								$this->variables = array();
+								do_action( 'wpv-before-display-post', $post, $view_id );
+								break;
+							case 'taxonomy':
+								$this->taxonomy_data['term'] = $items[ $i ];
+								do_action( 'wpv-before-display-taxonomy', $items[ $i ], $view_id );
+								break;
+							case 'users':
+								$user_id = $items[ $i ]->ID;
+								$user_meta = get_user_meta( $user_id );
+								$items[ $i ]->meta = $user_meta;
+								$this->users_data['term'] = $items[ $i ];
+								do_action( 'wpv-before-display-user', $items[ $i ], $view_id );
+								break;
 						}
-						$WPVDebug->add_log( $view_settings['query_type'][0] , $items[ $i ] );
+						
+						$WPVDebug->add_log( $query_type , $items[ $i ] );
 
 						// first output the "all" index.
 						$shortcodes_output = wpv_do_shortcode( $item_indexes['all'] );
@@ -2252,15 +2252,29 @@ class WP_Views {
 							$WPVDebug->add_log_item( 'shortcodes', $item_indexes[ $selected_index ] );
 							$WPVDebug->add_log_item( 'output', $shortcodes_output );
 						}
+						
+						/**
+						 * Execute an action after each of the View loop items is rendered.
+						 *
+						 * @param object $items[$i]  The object just displated, can be a WP_Post, a WP_Term, or a WP_User
+						 * @param string $query_type The type of query for the current loop: 'posts', 'taxonomy', or 'users'
+						 * @param int    $view_id    The ID of the View being looped
+						 *
+						 * @since 2.4.0
+						 */
+						do_action( 'wpv_action_wpv_loop_after_display_item', $items[ $i ], $query_type, $view_id );
 
-						// Do wpv-after-display-* action after displaying the item
-						if ( $view_settings['query_type'][0] == 'posts' ) {
-							do_action( 'wpv-after-display-post', $post, $view_id );
-							$this->variables = $temp_variables;
-						} elseif ( $view_settings['query_type'][0] == 'taxonomy' ) {
-							do_action( 'wpv-after-display-taxonomy', $items[ $i ], $view_id );
-						} elseif ( $view_settings['query_type'][0] == 'users' ) {
-							do_action( 'wpv-after-display-user', $items[ $i ], $view_id );
+						switch ( $query_type ) {
+							case 'posts':
+								do_action( 'wpv-after-display-post', $post, $view_id );
+								$this->variables = $temp_variables;
+								break;
+							case 'taxonomy':
+								do_action( 'wpv-after-display-taxonomy', $items[ $i ], $view_id );
+								break;
+							case 'users':
+								do_action( 'wpv-after-display-user', $items[ $i ], $view_id );
+								break;
 						}
 
 					}
@@ -3243,8 +3257,11 @@ class WP_Views {
 	 * Get query type for given or current View/WPA.
 	 *
 	 * @param null|int $view_id ID of existing View/WPA or null to use the current one.
+	 *
 	 * @return string Query type, which means 'posts', 'taxonomy' or 'users'.
+	 *
 	 * @since 1.11
+	 * @since 2.4.0 Return an empty string when the passed View ID does not match a valid View.
 	 */
 	function get_query_type( $view_id = null ) {
 		if ( is_null( $view_id ) ) {
@@ -3252,6 +3269,9 @@ class WP_Views {
 		}
 
 		$view = WPV_View_Base::get_instance( $view_id );
+		if ( is_null( $view ) ) {
+			return '';
+		}
 		return $view->query_type;
 	}
 	
@@ -3720,6 +3740,7 @@ class WP_Views {
 			'wpv_cancel'								=> __( 'Cancel', 'wpv-views' ),
 			'wpv_back'									=> __( 'Back', 'wpv-views' ),
 			'wpv_fields_and_views_title'				=> __( 'Fields and Views shortcodes', 'wpv-views' ),
+			'wpv_fields_and_views_button_title'			=> __( 'Fields and Views', 'wpv-views' ),
 			'wpv_shortcode_generated'					=> __( 'Generated shortcode', 'wpv-views' ),
 			'wpv_previous'								=> __( 'Previous', 'wpv-views' ),
 			'wpv_next'									=> __( 'Next', 'wpv-views' ),
@@ -4156,8 +4177,8 @@ function wpv_views_plugin_plugin_row_meta( $plugin_meta, $plugin_file, $plugin_d
 	if ( $plugin_file == $this_plugin ) {
 		$plugin_meta[] = sprintf(
 				'<a href="%s" target="_blank">%s</a>',
-				'https://wp-types.com/version/views-2-3-1/?utm_source=viewsplugin&utm_campaign=views&utm_medium=release-notes-plugin-row&utm_term=Views 2.3.1 release notes',
-				__( 'Views 2.3.1 release notes', 'wpv-views' ) 
+				'https://wp-types.com/version/views-2-4/?utm_source=viewsplugin&utm_campaign=views&utm_medium=release-notes-plugin-row&utm_term=Views 2.4 release notes',
+				__( 'Views 2.4 release notes', 'wpv-views' ) 
 			);
 	}
 	return $plugin_meta;

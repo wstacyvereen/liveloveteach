@@ -79,7 +79,7 @@ function wpv_view_default_settings( $purpose = 'full' ) {
 								'preload_pages'					=> true,
 								'pre_reach'						=> 1,
 								'spinner'						=> 'default',
-								'spinner_image'					=> WPV_URL . '/res/img/ajax-loader.gif',
+								'spinner_image'					=> WPV_URL_EMBEDDED . '/res/img/ajax-loader.gif',
 								'spinner_image_uploaded'		=> '',
 								'callback_next'	=>				'' 
 			),
@@ -136,7 +136,8 @@ function wpv_view_default_settings( $purpose = 'full' ) {
 			//$defaults['pagination'][0] = 'enable'; // disable --> enable // DEPRECATED
 			//$defaults['pagination']['mode'] = 'rollover';// DEPRECATED
 			$defaults['pagination']['type'] = 'rollover';
-			$defaults['sections-show-hide'] = array( 'limit-offset' => 'off' );
+			$defaults['pagination']['posts_per_page'] = 1;
+			$defaults['sections-show-hide'] = array();
 			break;
 		case 'parametric':
 			$defaults['sections-show-hide'] = array(
@@ -486,6 +487,10 @@ function wpv_layout_users_V( $menu ) {
 				'label'	=> __('Display Name', 'wpv-views'),
 				'code'	=> 'wpv-user field="display_name"'
 			),
+            'profile_picture'	=> array(
+                'label'	=> __( 'Profile Picture', 'wpv-views' ),
+                'code'	=> 'wpv-user field="profile_picture"'
+            ),
 			'user_nicename'		=> array(
 				'label'	=> __('Nicename', 'wpv-views'),
 				'code'	=> 'wpv-user field="user_nicename"'
@@ -531,6 +536,20 @@ function wpv_layout_users_V( $menu ) {
 			"WPViews.shortcodes_gui.wpv_insert_popup('wpv-user', '" . esc_js( $shortcode_data['label'] ) . "', {attributes:{field:'" . esc_js( $shortcode_slug ) . "'}}, '" . $nonce . "', this )"
 		);
     }
+	
+	// Add the toolset-edit-user-link item, only when CRED is available
+	// @since 2.4.0
+	if ( defined( 'CRED_FE_VERSION' ) ) {
+		if ( ! isset( $menu[ __( 'CRED Editing', 'wpv-views' ) ] ) ) {
+			$menu[ __( 'CRED Editing', 'wpv-views' ) ] = array();
+		}
+		$menu[ __( 'CRED Editing', 'wpv-views' ) ][ __( 'CRED edit-user link', 'wpv-views' ) ] = array(
+			__( 'CRED edit-user link', 'wpv-views' ),
+			'toolset-edit-user-link',
+			__( 'CRED Editing', 'wpv-views' ),
+			"WPViews.shortcodes_gui.wpv_insert_popup('toolset-edit-user-link', '" . esc_js( __( 'CRED edit-user link', 'wpv-views' ) ) . "', {}, '" . $nonce . "', this )"
+		);
+	}
 	
 	if ( function_exists('wpcf_init') ) {
 		//Get types groups and fields

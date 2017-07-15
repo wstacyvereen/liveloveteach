@@ -205,10 +205,6 @@ class Toolset_Controller_Admin_Notices {
 	 */
 	protected function notices_compilation_introduction() {
 		if( $this->only_types_active() ) {
-			// notice: theme we have an integration plugin for
-			$this->notice_customize_page_with_toolset();
-
-			// notice: theme we have no integration plugin for
 			$this->notice_how_to_design_with_toolset();
 
 			// notice: theme has native layout support
@@ -247,24 +243,10 @@ class Toolset_Controller_Admin_Notices {
 	/**
 	 * @return Toolset_Admin_Notice_Dismissible
 	 */
-	protected function notice_customize_page_with_toolset() {
-		$notice = new Toolset_Admin_Notice_Dismissible( 'customize-page-with-toolset' );
-		$notice->set_content( $this->tpl_path . '/only-types-installed/layouts-support-available.phtml' );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Available() );
-		Toolset_Admin_Notices_Manager::add_notice( $notice );
-
-		return $notice;
-	}
-
-	/**
-	 * @return Toolset_Admin_Notice_Dismissible
-	 */
 	protected function notice_how_to_design_with_toolset() {
 		$notice = new Toolset_Admin_Notice_Dismissible( 'how-to-design-with-toolset' );
 		$notice->set_content( $this->tpl_path . '/only-types-installed/layouts-support-missing.phtml' );
 		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Native_Missing() );
-		$notice->add_condition( new Toolset_Condition_Theme_Layouts_Support_Plugin_Missing() );
 		Toolset_Admin_Notices_Manager::add_notice( $notice );
 
 		return $notice;

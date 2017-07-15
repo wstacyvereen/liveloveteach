@@ -197,6 +197,13 @@ WPViews.CTDialogs = function( $ ) {
                         onCancelCallback();
                     },
                     buttons:[
+						 {
+                            class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-ct-bulk-replace-usage',
+                            text: self.l10n.dialog_trash_warning_action,
+                            click: function() {
+                                dg.confirmTrashWithReplace();
+                            }
+                        },
                         {
                             class: 'button-secondary',
                             text: self.l10n.dialog_cancel,
@@ -204,13 +211,6 @@ WPViews.CTDialogs = function( $ ) {
                                 $( this ).dialog( "close" );
                             }
                         },
-                        {
-                            class: 'button-primary js-ct-bulk-replace-usage',
-                            text: self.l10n.dialog_trash_warning_action,
-                            click: function() {
-                                dg.confirmTrashWithReplace();
-                            }
-                        }
                     ]
                 });
 

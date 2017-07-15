@@ -295,152 +295,10 @@ function wpml_content_get_link_paths($body) {
  * @param int $view_id The current View ID to build the content from
  *
  * @since 1.3.0
+ * @deprecated 2.4.0 Use the wpv_register_shortcode_attributes_to_translate callback for the wpv_action_wpv_register_wpml_stringsaction instead
  */
 function wpv_add_controls_labels_to_translation( $content, $view_id ) {
-	if( function_exists('icl_register_string') ) {
-		/*
-		** Array of fields to be checked
-		*/
-		$tobechecked = array(
-			'display_values',
-			'default_label',
-			'title',
-			'auto_fill_default',
-			'name',
-			'reset_label'
-		);
-		/*
-		** If there are commas escaped or placeheld please replace with '|' (pipe char)
-		*/
-		$content = str_replace( array( '%%COMMA%%', "\\\\\," ), '|', $content );
-		/*
-		** Strip all slashes if any left
-		*/
-		$content = stripslashes( $content );
-		/*
-		** Make a context out of View title
-		*/
-		$context = get_post_field( 'post_name', $view_id );
-		/*
-		** Empty array to store what's already being parsed (when BETWEEN or NOT BETWEEN we can have 2 recorrences of the same labels)
-		*/
-		$control = array();
-
-		/*
-		** Loop through all our fields
-		*/
-		foreach( $tobechecked as $string ) {
-		
-			if ( $string == 'name' ) {
-				$button_name = 'submit';
-			} else {
-				$button_name = 'button';
-			}
-			/*
-			** Make sure we have parameters in the form of param="
-			*/
-			if( strpos( $content, $string.'="' ) !== false ) {
-				/*
-				** Subquery 1: ( (url_param\s*?=\"(.*?)\").*?)? make sure if we have 0 or more occurences of 'url_param="' and take the value (.*?) in a subquery
-				** array[3]
-				** Subquery 3: this is our main without ? operator (".$string."\s*?=\"(.*?)\"), if there is store (.*?) subquery value in array[5]
-				*/
-				preg_match_all( "/( (url_param\s*?=\"(.*?)\").*?)?(".$string."\s*?=\"(.*?)\")/", $content, $matches );
-				if ( $string == 'default_label' ) {
-					preg_match_all( "/( (ancestor_type\s*?=\"(.*?)\").*?)?(".$string."\s*?=\"(.*?)\")/", $content, $anc_matches );
-				}
-				/*
-				** If we have a corrsponding match on (".$string."\s*?=\"(.*?)\") this one and first element of result array is not empty loop
-				*/
-				if( isset( $matches[5] ) && isset( $matches[5][0] ) ) {
-					/*
-					** Loop through results and store $key for control
-					*/
-					foreach( $matches[5] as $key=>$translate ) {
-						/*
-						** If we have values we will store first element of the list here to be translated
-						*/
-						$translate_first = '';
-						/*
-						** If we have values keep track if the first display_value should be translated or not
-						*/
-
-						$should_do = false;
-						
-						/**
-						** Take the key of the actual record to translate.
-						** If there are multiple, do it for every one of them
-						**/
-						$key_juan = array_keys( $matches[5], $translate );
-						
-						foreach ( $key_juan as $key_t ) {
-
-							/**
-							** Create a name for label to translate
-							**/
-							
-							if ( $string == 'default_label' && isset( $anc_matches[3] ) && isset( $anc_matches[3][$key_t] ) ) {
-								$button_name = $anc_matches[3][$key_t];
-							}
-							
-							$name = !empty( $matches[3][$key_t] ) ? $matches[3][$key_t] : $button_name;
-
-							/*
-							** Make sure we do not already have a translatable string for this occurence
-							*/
-							if( !in_array($translate . $name, $control) ) {
-
-								/*
-								** If we have values loop through them
-								*/
-								if( $string == 'display_values' ) {
-									$should_do = true;
-									/*
-									** Keep track of the values already pushed for translation f we have more occurences of same value
-									*/
-
-									$trs_values = array();
-									/*
-									** Loop through values
-									*/
-
-									/*
-									** Translate only display_values if first value is empty and we didn't push it already
-									*/
-
-									$translate_first = explode( ',', $translate );
-									foreach( $translate_first as $trs_first ) {
-										$trs_first = str_replace('|', ',', $trs_first );
-										array_push($trs_values, $trs_first);
-									}
-
-								}
-
-								/**
-								** If eligible for translation do
-								**/
-
-								if( $should_do ) {
-									$count_values = 1;
-									foreach( $trs_values as $trs )
-									{
-										icl_register_string( "View ".$context, $name.'_'.$string."_".$count_values, $trs );
-										$count_values++;
-									}
-									$trs_first = '';
-								} else {
-									icl_register_string( "View ".$context, $name.'_'.$string, $translate );
-								}
-
-								array_push($control, $translate . $name);
-							}
-
-						}
-					}
-				}
-			}
-		}
-	}
+	return;
 }
 
 /**
@@ -1008,14 +866,16 @@ class WPV_WPML_Integration_Embedded {
 	
 	
 	/**
-	 * wpv_wpml_lang_switcher
-	 *
 	 * Callback for the [wpml-lang-switcher] shortcode.
+	 *
+	 * @param array $atts
+	 * @param string $value
+	 *
+	 * @return string
 	 *
 	 * @since unknown
 	 * @since 2.3.0		Moved to this compatibility class
 	 */
-	
 	public function wpv_wpml_lang_switcher( $atts, $value ) {
 	
 		ob_start();
@@ -1027,14 +887,16 @@ class WPV_WPML_Integration_Embedded {
 	
 
 	/**
-	 * wpv_wpml_lang_switcher
-	 *
 	 * Callback for the [wpml-lang-footer] shortcode.
+	 *
+	 * @param array $atts
+	 * @param string $value
+	 *
+	 * @return string
 	 *
 	 * @since unknown
 	 * @since 2.3.0		Moved to this compatibility class
 	 */
-
 	public function wpv_wpml_lang_footer( $atts, $value ) {
 
 		ob_start();
@@ -1047,11 +909,14 @@ class WPV_WPML_Integration_Embedded {
 	
 	
 	/**
-	 * wpv_wpml_breadcrumb
-	 *
 	 * Callback for the [wpml-breadcrumbs] shortcode.
 	 *
 	 * @note We do not add the [wpml-breadcrumbs] shortcode as it needs to be executed outside the post loop, hence it is useless for Views.
+	 *
+	 * @param array $atts
+	 * @param string $value
+	 *
+	 * @return string
 	 *
 	 * @since unknown
 	 * @since 2.3.0		Moved to this compatibility class
@@ -1069,14 +934,16 @@ class WPV_WPML_Integration_Embedded {
 	
 	
 	/**
-	 * wpv_wpml_lang_switcher
-	 *
 	 * Callback for the [wpml-sidebar] shortcode.
+	 *
+	 * @param array $atts
+	 * @param string $value
+	 *
+	 * @return string
 	 *
 	 * @since unknown
 	 * @since 2.3.0		Moved to this compatibility class
 	 */
-
 	public function wpv_wpml_sidebar( $atts, $value ) {
 		
 		ob_start();
@@ -1088,8 +955,6 @@ class WPV_WPML_Integration_Embedded {
 	
 	
 	/**
-	 * wpv_add_wpml_shortcodes_to_editor
-	 *
 	 * Register the WPML shortcodes in the Fields and Views dialog, when the WPML pieces are available.
 	 *
 	 * @todo avoid globals and use API filters instead.
@@ -1099,7 +964,6 @@ class WPV_WPML_Integration_Embedded {
 	 * @since 2.3.0
 	 * @deprecated 2.3.0 Keep it for backwards compatibility.
 	 */
-	
 	public function wpv_add_wpml_shortcodes_to_editor( $editor, $nonce ) {
 		
 		_doing_it_wrong(
@@ -1141,6 +1005,11 @@ class WPV_WPML_Integration_Embedded {
 		}
 	}
 	
+	/**
+	 * Register the WPML shortcodes in the Fields and Views dialog, inside its own group.
+	 *
+	 * @since unknown
+	 */
 	public function register_shortcodes_dialog_group() {
 		
 		if ( ! $this->is_wpml_loaded() ) {
@@ -1190,13 +1059,14 @@ class WPV_WPML_Integration_Embedded {
 	
 	
 	/**
-	 * wpv_register_wpml_shortcodes_data
-	 *
 	 * Register the WPML shortcodes in the general shortcodes GUI so we can display attribute oprions and information.
+	 *
+	 * @param array $views_shortcodes The registered Views shortcodes.
+	 *
+	 * @return array
 	 *
 	 * @since 2.3.0
 	 */
-	
 	public function wpv_register_wpml_shortcodes_data( $views_shortcodes ) {
 		if ( $this->is_wpml_loaded() ) {
 			if ( function_exists('icl_register_string') ) {
@@ -1219,7 +1089,12 @@ class WPV_WPML_Integration_Embedded {
 		}
 		return $views_shortcodes;
 	}
-
+	
+	/**
+	 * Get the data for the GUI for the [wpml-string] shortcode.
+	 *
+	 * @since unknown
+	 */
 	function wpv_shortcodes_get_wpml_string_data() {
 		
 		if ( ! $this->is_wpml_loaded() ) {
@@ -1262,7 +1137,11 @@ class WPV_WPML_Integration_Embedded {
 		return $data;
 	}
 	
-	
+	/**
+	 * Get the data for the GUI for the [wpml-lang-switcher] shortcode.
+	 *
+	 * @since unknown
+	 */
 	public function wpv_shortcodes_get_wpml_lang_switcher_data() {
 		
 		if ( ! $this->is_wpml_loaded() ) {
@@ -1289,7 +1168,11 @@ class WPV_WPML_Integration_Embedded {
 		
 	}
 	
-	
+	/**
+	 * Get the data for the GUI for the [wpml-lang-footer] shortcode.
+	 *
+	 * @since unknown
+	 */
 	public function wpv_shortcodes_get_wpml_lang_footer_data() {
 		
 		if ( ! $this->is_wpml_loaded() ) {
@@ -1316,7 +1199,11 @@ class WPV_WPML_Integration_Embedded {
 		
 	}
 	
-	
+	/**
+	 * Get the data for the GUI for the [wpml-sidebar] shortcode.
+	 *
+	 * @since unknown
+	 */
 	public function wpv_shortcodes_get_wpml_sidebar_data() {
 		
 		if ( ! $this->is_wpml_loaded() ) {
@@ -1349,12 +1236,12 @@ class WPV_WPML_Integration_Embedded {
 	}
 	
 	/**
-	 * Filter hooked into wpv_custom_inner_shortcodes.
-	 * Add the [wpml-string] shortcode to the allowed inner shortcodes, even if the [wpml-string] shortcode itself does not exist
+	 * Add the [wpml-string] shortcode to the allowed inner shortcodes, 
+	 * even if the [wpml-string] shortcode itself does not exist.
 	 *
-	 * @param $custom_inner_shortcodes array() of allowed custom inner shortcodes
+	 * @param array $custom_inner_shortcodes List of allowed custom inner shortcodes
 	 *
-	 * @return $custom_inner_shortcodes
+	 * @return array
 	 *
 	 * @since 1.4.0
 	 * @since 2.3.0 Moved to a proper method in the WPML integration class.
@@ -1375,7 +1262,6 @@ class WPV_WPML_Integration_Embedded {
 	 * @since 1.6.2 Change of the hook to init as the user capabilities are not reliable before that (and they are used in get_posts()).
 	 * @since 2.3.0 Moved to be a proper method in the WPML integration class.
 	 */
-	
 	function wpv_register_wpml_strings_on_activation() {
 		if (
 			function_exists( 'icl_register_string' ) 
@@ -1391,7 +1277,6 @@ class WPV_WPML_Integration_Embedded {
 				// Register strings in the Filter HTML textarea
 				$view_array = apply_filters( 'wpv_filter_wpv_get_view_settings', array(), $view_post["ID"] );
 				if ( isset( $view_array['filter_meta_html'] ) ) {
-					wpv_add_controls_labels_to_translation( $view_array['filter_meta_html'], $view_post["ID"] );
 					do_action( 'wpv_action_wpv_register_wpml_strings', $view_array['filter_meta_html'], $view_post["ID"] );
 				}
 				// Register strings in the Layout HTML textarea
@@ -1412,84 +1297,292 @@ class WPV_WPML_Integration_Embedded {
 		}
 	}
 	
-	public function wpv_register_wpml_strings( $content ) {
-	
-		if ( strpos( $content, '[wpml-string' ) === false ) {
+	/**
+	 * Generic method to register shortcode attributes for translation in WPML.
+	 *
+	 * @param string $content The content to parse for shortcodes with atrributes to translate
+	 * @param array  $fake_shortcodes List of shortcodes to look for, with their fake callbacks to register translatable attributes
+	 *
+	 * @since 2.4.0
+	 */
+	private function register_shortcodes_to_translate( $content, $fake_shortcodes ) {
+		$is_match = false;
+		$shortcodes_to_match = array_keys( $fake_shortcodes );
+		foreach( $shortcodes_to_match as $to_match ) {
+			$is_match = ( $is_match || strpos( $content, '[' . $to_match  ) !== false );
+		}
+
+		if ( ! $is_match ) {
 			return;
 		}
-		
-		if ( function_exists( 'icl_register_string' ) ) {
-			
-			$content = stripslashes( $content );
-			
-			global $shortcode_tags;
-			// Back up current registered shortcodes and clear them all out
-			$orig_shortcode_tags = $shortcode_tags;
-			remove_all_shortcodes();
-			
-			add_shortcode( 'wpml-string', array( $this, 'wpv_fake_wpml_string_shortcode_to_icl_register_string' ) );
-			do_shortcode( $content );
-			
-			$shortcode_tags = $orig_shortcode_tags;
-			
+
+		global $shortcode_tags;
+		// Back up current registered shortcodes and clear them all out
+		$orig_shortcode_tags = $shortcode_tags;
+
+		remove_all_shortcodes();
+
+		foreach( $fake_shortcodes as $shortcode => $callback ) {
+			add_shortcode( $shortcode, $callback );
 		}
-		
+
+		$content = stripslashes( $content );
+
+		do_shortcode( $content );
+
+		$shortcode_tags = $orig_shortcode_tags;
 	}
 	
+	/**
+	 * Register the [wpml-string] shortcodes on WPML.
+	 *
+	 * @param string $content The content to parse for [wpml-string] shortcodes to register.
+	 *
+	 * @since 2.3.0
+	 */
+	public function wpv_register_wpml_strings( $content ) {
+		if ( function_exists( 'icl_register_string' ) ) {
+			$fake_shortcodes = array(
+				'wpml-string' => array( $this, 'wpv_fake_wpml_string_shortcode_to_icl_register_string' )
+			);
+			$this->register_shortcodes_to_translate( $content, $fake_shortcodes );
+			
+		}
+	}
+	
+	
+
+	/**
+	 * Register shortcode attributes for translation.
+	 *
+	 * @param string  $content  The content coming from the saved editor
+	 * @param int     $id       The View id
+	 *
+	 * @since unknown
+	 * @since 2.4.0 Added call to register the pagination shortcode attributes for translation.
+	 * @since 2.4.0 Added call to register the frontend filters shortcode attributes for translation.
+	 * @since 2.4.0 Added call to register the content of the toolset-edit-post-link and toolset-edit-user-link shortcodes.
+	 */
 	public function wpv_register_shortcode_attributes_to_translate( $content, $id ) {
 		if ( function_exists('icl_register_string') ) {
 			$this->_context = 'View ' . get_post_field( 'post_name', $id );
-			$this->wpv_register_wpv_control_shortcode_attributes_to_translate( $content, $id );
-			$this->wpv_register_wpv_sorting_shortcode_attributes_to_translate( $content, $id );
+			
+			$fake_shortcodes = array(
+				'wpv-control'			=> array( $this, 'wpv_fake_wpv_control_shortcode_to_icl_register_string' ),
+				'wpv-control-post-taxonomy'	=> array( $this, 'wpv_fake_wpv_control_post_taxonomy_shortcode_to_icl_register_string' ),
+				'wpv-control-postmeta'	=> array( $this, 'wpv_fake_wpv_control_postmeta_shortcode_to_icl_register_string' ),
+				'wpv-control-item'		=> array( $this, 'wpv_fake_wpv_control_post_ancestor_shortcode_to_icl_register_string' ),
+				'wpv-control-ancestor'	=> array( $this, 'wpv_fake_wpv_control_post_ancestor_shortcode_to_icl_register_string' ),
+				'wpv-filter-submit'		=> array( $this, 'wpv_fake_wpv_filter_submit_shortcode_to_icl_register_string' ),
+				'wpv-filter-reset'		=> array( $this, 'wpv_fake_wpv_filter_reset_shortcode_to_icl_register_string' ),
+				'wpv-sort-orderby'		=> array( $this, 'wpv_fake_wpv_sorting_shortcode_to_icl_register_string' ),
+				'wpv-sort-order'		=> array( $this, 'wpv_fake_wpv_sorting_shortcode_to_icl_register_string' ),
+				'wpv-pager-nav-links'	=> array( $this, 'fake_wpv_pagination_shortcode_to_icl_register_string' ) ,
+				'wpv-pager-archive-nav-links'	=> array( $this, 'fake_wpv_pagination_shortcode_to_icl_register_string' ),
+				'wpv-post-previous-link'	=> array( $this, 'fake_wpv_post_shortcode_to_icl_register_string' ),
+				'wpv-post-next-link'		=> array( $this, 'fake_wpv_post_shortcode_to_icl_register_string' ),
+				'toolset-edit-post-link'	=> array( $this, 'fake_toolset_edit_link_to_icl_register_string' ),
+				'toolset-edit-user-link'	=> array( $this, 'fake_toolset_edit_link_to_icl_register_string' ),
+				'cred-form-message'			=> array( $this, 'fake_cred_form_message_to_icl_register_string' )
+			);
+			
+			$this->register_shortcodes_to_translate( $content, $fake_shortcodes );
+			
 			$this->_context = '';
 		}
 	}
 	
-	public function wpv_register_wpv_control_shortcode_attributes_to_translate( $content, $id ) {
-		
+	/**
+	 * Register wpv-control shortcode attributes for translation.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function wpv_fake_wpv_control_shortcode_to_icl_register_string( $atts ) {
 		if ( ! function_exists('icl_register_string') ) {
 			return;
 		}
 		
+		$url_param = isset( $atts['url_param'] ) ? $atts['url_param'] : '';
+		
+		if ( empty( $url_param ) ) {
+			return;
+		}
+		
+		// We need to catch each attribute one by one, just because of legacy and backwards compatibility :-)
+		if ( isset( $atts['auto_fill_default'] ) ) {
+			icl_register_string( $this->_context, $url_param . '_auto_fill_default', $atts['auto_fill_default'] );
+		}
+		
+		if ( isset( $atts['display_values'] ) ) {
+			$display_values = explode( ',', $atts['display_values'] );
+			foreach ( $display_values as $display_value_key => $display_value_to_translate ) {
+				$display_value_to_translate = str_replace( array( '%%COMMA%%', '%comma%', '\,' ), ',', $display_value_to_translate );
+				icl_register_string( $this->_context, $url_param . '_display_values_' . ( $display_value_key + 1 ), $display_value_to_translate );
+			}
+		}
+		
+		if ( isset( $atts['title'] ) ) {
+			icl_register_string( $this->_context, $url_param . '_title', $atts['title'] );
+		}
+		
+		// Taxonomy attributes
+		if ( isset( $atts['default_label'] ) ) {
+			icl_register_string( $this->_context, $url_param . '_default_label', $atts['default_label'] );
+		}
+		
+		return;
 	}
 	
-	public function wpv_register_wpv_sorting_shortcode_attributes_to_translate( $content, $id ) {
-		
+	/**
+	 * Register wpv-control-post-taxonomy shortcode attributes for translation.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function wpv_fake_wpv_control_post_taxonomy_shortcode_to_icl_register_string( $atts ) {
 		if ( ! function_exists('icl_register_string') ) {
 			return;
 		}
 		
-		if ( 
-			strpos( $content, '[wpv-sort-orderby ' ) !== false 
-			|| strpos( $content, '[wpv-sort-order ' ) !== false
-		) {
-			global $shortcode_tags;
-			// Back up current registered shortcodes and clear them all out
-			$orig_shortcode_tags = $shortcode_tags;
-			remove_all_shortcodes();
-			add_shortcode( 'wpv-sort-orderby', array( $this, 'wpv_fake_wpv_sorting_shortcode_to_icl_register_string' ) );
-			add_shortcode( 'wpv-sort-order', array( $this, 'wpv_fake_wpv_sorting_shortcode_to_icl_register_string' ) );
-			
-			$content = stripslashes( $content );
-			
-			do_shortcode( $content );
-			
-			$shortcode_tags = $orig_shortcode_tags;
+		$url_param = isset( $atts['url_param'] ) ? $atts['url_param'] : '';
+		
+		if ( empty( $url_param ) ) {
+			return;
 		}
 		
+		$attributes_to_translate = array( 'default_label' );
+		
+		foreach ( $attributes_to_translate as $att_to_translate ) {
+			if ( isset( $atts[ $att_to_translate ] ) ) {
+				icl_register_string( $this->_context, $url_param . '_' . $att_to_translate, $atts[ $att_to_translate ] );
+			}
+		}
+		
+		return;
 	}
 	
+	/**
+	 * Register wpv-control-postmeta shortcode attributes for translation.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function wpv_fake_wpv_control_postmeta_shortcode_to_icl_register_string( $atts ) {
+		if ( ! function_exists('icl_register_string') ) {
+			return;
+		}
+		
+		$url_param = isset( $atts['url_param'] ) ? $atts['url_param'] : '';
+		
+		if ( empty( $url_param ) ) {
+			return;
+		}
+		
+		// We need to catch each attribute one by one, just because of legacy and backwards compatibility :-)
+		if ( isset( $atts['default_label'] ) ) {
+			icl_register_string( $this->_context, $url_param . '_auto_fill_default', $atts['default_label'] );
+		}
+		
+		if ( isset( $atts['display_values'] ) ) {
+			$display_values = explode( ',', $atts['display_values'] );
+			foreach ( $display_values as $display_value_key => $display_value_to_translate ) {
+				$display_value_to_translate = str_replace( array( '%%COMMA%%', '%comma%', '\,' ), ',', $display_value_to_translate );
+				icl_register_string( $this->_context, $url_param . '_display_values_' . ( $display_value_key + 1 ), $display_value_to_translate );
+			}
+		}
+		
+		return;
+	}
+	
+	/**
+	 * Register wpv-control-post-ancestor shortcode attributes for translation.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function wpv_fake_wpv_control_post_ancestor_shortcode_to_icl_register_string( $atts ) {
+		if ( ! function_exists('icl_register_string') ) {
+			return;
+		}
+		
+		$ancestor_type = isset( $atts['ancestor_type'] ) ? $atts['ancestor_type'] : '';
+		
+		if ( empty( $ancestor_type ) ) {
+			return;
+		}
+		
+		$attributes_to_translate = array( 'default_label' );
+		
+		foreach ( $attributes_to_translate as $att_to_translate ) {
+			if ( isset( $atts[ $att_to_translate ] ) ) {
+				icl_register_string( $this->_context, $ancestor_type . '_' . $att_to_translate, $atts[ $att_to_translate ] );
+			}
+		}
+		
+		return;
+	}
+	
+	/**
+	 * Register wpv-filter-submit shortcode attributes for translation.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function wpv_fake_wpv_filter_submit_shortcode_to_icl_register_string( $atts ) {
+		if ( ! function_exists('icl_register_string') ) {
+			return;
+		}
+		
+		$name = isset( $atts['name'] ) ? $atts['name'] : '';
+		
+		if ( empty( $name ) ) {
+			return;
+		}
+		
+		icl_register_string( $this->_context, 'submit_name', $name );
+		
+		return;
+	}
+	
+	/**
+	 * Register wpv-filter-reset shortcode attributes for translation.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function wpv_fake_wpv_filter_reset_shortcode_to_icl_register_string( $atts ) {
+		if ( ! function_exists('icl_register_string') ) {
+			return;
+		}
+		
+		$reset_label = isset( $atts['reset_label'] ) ? $atts['reset_label'] : '';
+		
+		if ( empty( $reset_label ) ) {
+			return;
+		}
+		
+		icl_register_string( $this->_context, 'button_reset_label', $reset_label );
+		
+		return;
+	}
+
 	/**
 	 * Fake callback for the wpml-string shortcode,
 	 * so its attributes can be parsed and defaulted, and the string can be registered.
 	 *
-	 * @param atts array
-	 * @param content string
+	 * @param array  $atts    The shotcode attributes
+	 * @param string $content The shortcode content
 	 *
 	 * @since 2.2.2
 	 * @since 2.3.0 Moved to a proper method of the WPML integration class.
 	 */
-
 	public function wpv_fake_wpml_string_shortcode_to_icl_register_string( $atts, $content ) {
 		if ( function_exists( 'icl_register_string' ) ) {
 			$atts = shortcode_atts( 
@@ -1504,27 +1597,142 @@ class WPV_WPML_Integration_Embedded {
 		}
 		return;
 	}
+
+	/**
+	 * Fake callback for the wpv-post-xxx shortcodes, so their attributes can be registered.
+	 *
+	 * @param (array)   atts        Shortcode attributes
+	 * @param (string)  content     Shortcode content
+	 * @param (string)  tag         Shortcode tag
+	 *
+	 * @since 2.4.0
+	 */
+	public function fake_wpv_post_shortcode_to_icl_register_string( $atts, $content, $tag ) {
+
+		if ( ! function_exists( 'icl_register_string' ) ) {
+			return;
+		}
+		
+		$atts_to_names_for_labels = array();
+		switch( $tag ) {
+			case 'wpv-post-previous-link':
+				$atts_to_names_for_labels['format'] = 'post_control_for_previous_link_format';
+				$atts_to_names_for_labels['link'] = 'post_control_for_previous_link_text';
+				break;
+			case 'wpv-post-next-link':
+				$atts_to_names_for_labels['format'] = 'post_control_for_next_link_format';
+				$atts_to_names_for_labels['link'] = 'post_control_for_next_link_text';
+				break;
+			default:
+				return;
+		}
+
+		foreach ( $atts as $att_key => $att_value ) {
+			foreach ( $atts_to_names_for_labels as $att_for_label => $name_for_label ) {
+				if ( strpos( $att_key, $att_for_label ) === 0 ) {
+					$att_meta_key = substr( $att_key, strlen( $att_for_label ) );
+					$name = $name_for_label . $att_meta_key . '_' . md5( $att_value );
+					icl_register_string( $this->_context, $name, $att_value );
+					break;
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Fake callback for the toolset-edit-xxx-link shortcodes, so their content can be registered.
+	 *
+	 * @param (array)   atts        Shortcode attributes
+	 * @param (string)  content     Shortcode content
+	 * @param (string)  tag         Shortcode tag
+	 *
+	 * @note Those shortcodes are registered for translation using the 'Toolset Shortcodes' context
+	 * @note This translation uses a shortened content hash for pseudo-unique contexts
+	 *
+	 * @since 2.4.0
+	 */
+	public function fake_toolset_edit_link_to_icl_register_string( $atts, $content, $tag ) {
+		
+		if ( ! function_exists( 'icl_register_string' ) ) {
+			return;
+		}
+		
+		$atts = shortcode_atts(
+			array(
+				'content_template_slug'	=> '',
+				'layout_slug'			=> ''
+			),
+			$atts
+		);
+		
+		if (
+			empty( $atts['content_template_slug'] ) 
+			&& empty( $atts['layout_slug'] ) 
+		) {
+			return;
+		}
+		
+		$name = $tag;
+		foreach( $atts as $att_key => $att_value ) {
+			if ( in_array( $att_key, array( 'content_template_slug', 'layout_slug' ) ) ) {
+				$name .= '_' . $att_value;
+			}
+		}
+		$name .= '_' . substr( md5( $content ), 0, 12 );
+		
+		icl_register_string( 'Toolset Shortcodes', $name, $content );
+		
+	}
+	
+	/**
+	 * Fake callback for the cred-form-message shortcode, so its content can be registered.
+	 *
+	 * @param (array)   atts        Shortcode attributes
+	 * @param (string)  content     Shortcode content
+	 * @param (string)  tag         Shortcode tag
+	 *
+	 * @note This shortcode is registered for translation using the 'Toolset Shortcodes' context
+	 * @note This translation uses a shortened content hash for pseudo-unique contexts
+	 *
+	 * @since 2.4.0
+	 */
+	public function fake_cred_form_message_to_icl_register_string( $atts, $content, $tag ) {
+		
+		if ( ! function_exists( 'icl_register_string' ) ) {
+			return;
+		}
+		
+		$atts = shortcode_atts(
+			array(
+				'message'	=> 'cred_message_post_saved'
+			),
+			$atts
+		);
+		
+		if ( empty( $atts['message'] ) ) {
+			return;
+		}
+		
+		$name = $tag . '_' . $atts['message'] . '_' . substr( md5( $content ), 0, 12 );
+		
+		icl_register_string( 'Toolset Shortcodes', $name, $content );
+		
+	}
 	
 	/**
 	 * Fake callback for the wpv-sort-orderby and wpv-sort-order shortcodes,
 	 * so its label attributes can be registered.
 	 *
-	 * @param atts array
+	 * @param array $atts The shotcode attributes
 	 *
 	 * @since 2.3.0
 	 * @since 2.3.1 Register "label_asc_for_{field-slug] and label_desc_for_{field-slug} attribute values.
 	 */
-	
 	public function wpv_fake_wpv_sorting_shortcode_to_icl_register_string( $atts ) {
 		
 		if ( ! function_exists('icl_register_string') ) {
 			return;
 		}
-		
-		$atts = wp_parse_args( 
-			$atts, 
-			array()
-		);
 		
 		$atts_to_names_for_labels = array(
 			'label_for_'		=> 'sorting_control_for_',
@@ -1549,6 +1757,42 @@ class WPV_WPML_Integration_Embedded {
 			
 		}
 		
+	}
+	/**
+	 * Fake callback for the wpv-pager-nav-links and wpv-pager-archive-nav-links shortcodes,
+	 * so their label attributes can be registered.
+	 *
+	 * @param array $atts The shotcode attributes
+	 *
+	 * @since 2.4.0
+	 */
+	public function fake_wpv_pagination_shortcode_to_icl_register_string( $atts ) {
+
+		if ( ! function_exists( 'icl_register_string' ) ) {
+			return;
+		}
+
+		$atts_to_names_for_labels = array(
+			'text_for_' => 'pagination_control_for_',
+		);
+
+		foreach ( $atts as $att_key => $att_value ) {
+
+			foreach ( $atts_to_names_for_labels as $att_for_label => $name_for_label ) {
+
+				if ( strpos( $att_key, $att_for_label ) === 0 ) {
+
+					$att_meta_key = substr( $att_key, strlen( $att_for_label ) );
+					$name = $name_for_label . $att_meta_key . '_' . md5( $att_value );
+					icl_register_string( $this->_context, $name, $att_value );
+					break;
+
+				}
+
+			}
+
+		}
+
 	}
 	
 }

@@ -417,12 +417,6 @@ function wpv_ct_editor_page_edit( $ct ) {
      * @since 1.9
      */
     do_action( 'wpv_ct_editor_sections', $ct );
-
-    // Render HTML template for the Insert/Edit link native WP dialog.
-	if ( ! class_exists( '_WP_Editors' ) ) {
-		require( ABSPATH . WPINC . '/class-wp-editor.php' );
-	}
-	_WP_Editors::wp_link_dialog();
 	
     // Wrapper end
     echo '</div>';

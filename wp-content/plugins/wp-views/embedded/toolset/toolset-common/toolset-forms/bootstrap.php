@@ -1,6 +1,6 @@
 <?php
 
-define('WPTOOLSET_FORMS_VERSION', '0.1.1');
+define('WPTOOLSET_FORMS_VERSION', '0.1.2');
 define('WPTOOLSET_FORMS_ABSPATH', dirname(__FILE__));
 
 require_once WPTOOLSET_FORMS_ABSPATH . '/api.php';

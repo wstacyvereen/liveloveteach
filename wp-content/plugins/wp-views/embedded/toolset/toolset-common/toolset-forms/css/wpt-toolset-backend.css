@@ -3,7 +3,6 @@
     background-color: #ffffff;
     padding: 0 15px 15px 15px;
     border: 1px solid #cccccc;
-    border-color: #cccccc;
     margin: 15px 0 25px 0;
 }
 .wpt-form-fieldset fieldset {
@@ -19,14 +18,14 @@
     padding-left: 15px;
     background-image: url('../images/expand.png');
     background-repeat: no-repeat;
-    background-position: 0px 2px;
+    background-position: 0 2px;
     cursor: pointer;
 }
 .wpt-form-fieldset .legend-expanded {
     padding-left: 15px;
     background-image: url('../images/collapse.png');
     background-repeat: no-repeat;
-    background-position: 0px 3px;
+    background-position: 0 3px;
     cursor: pointer;
 }
 .wpt-form-fieldset .collapsed {
@@ -51,7 +50,7 @@
 }
 
 .wpt-form-description > p{
-    margin: 0px;
+    margin: 0;
     font-size: 13px;
 }
 
@@ -61,7 +60,7 @@
     margin: 10px 0;
 }
 .wpt-form-item-radio, .wpt-form-item-checkbox {
-    margin-bottom: 0px !important;
+    margin-bottom: 0 !important;
 }
 .wpt-form-textarea {
     width: 100%;
@@ -114,7 +113,6 @@ input.wpt-form-error {
 .wpt-form-fields-delete,
 .wpt-fields-form-move-field {
     float: left;
-    margin-top: 10px;
     margin-top: 3px;
     margin-right: 5px;
 }
@@ -143,12 +141,25 @@ input.wpt-form-error {
 }
 
 .wpt-form-label {
-    margin-bottom: 0px;
+    margin-bottom: 0;
 }
 .wpt-form-description {
     margin: 5px 0;
     font-size: 1em;
 }
+
+.wpt-date input{
+    display: inline-block;
+    max-width: 150px;
+}
+.wpt-date .wpt-form-item-select {
+    display: inline-block;
+}
+.wpt-date-clear {
+    vertical-align: text-bottom;
+    cursor: pointer;
+}
+
 img.ui-datepicker-trigger {
     margin-left: 5px;
     cursor: pointer;

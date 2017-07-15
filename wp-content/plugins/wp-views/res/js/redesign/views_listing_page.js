@@ -643,17 +643,17 @@ WPViews.ViewsListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-create-new-view',
+					text: views_listing_texts.dialog_create_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: views_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-create-new-view',
-					text: views_listing_texts.dialog_create_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -684,17 +684,17 @@ WPViews.ViewsListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-duplicate-view',
+					text: views_listing_texts.dialog_duplicate_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: views_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-duplicate-view',
-					text: views_listing_texts.dialog_duplicate_action,
-					click: function() {
-
 					}
 				}
 			]
@@ -724,17 +724,17 @@ WPViews.ViewsListingScreen = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-primary js-wpv-bulkcombined-view',
+					text: views_listing_texts.dialog_bulktrash_action,
+					click: function() {
+
+					}
+				},
+				{
 					class: 'button-secondary',
 					text: views_listing_texts.dialog_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-primary js-wpv-bulkcombined-view',
-					text: views_listing_texts.dialog_bulktrash_action,
-					click: function() {
-
 					}
 				}
 			]

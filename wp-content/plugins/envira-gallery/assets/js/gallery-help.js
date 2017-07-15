@@ -23,16 +23,16 @@ jQuery( document ).ready( function( $ ) {
 
         // Check if the video has the autoplay parameter included
         // If not, add it now - this will play the video when it's inserted to the iframe.
-        if ( envira_video_url.search( 'autoplay=1' ) === -1 ) {
-            if ( envira_video_url.search( 'rel=' ) === -1 ) {
-                envira_video_url += '?rel=0&autoplay=1';
-            } else {
-                envira_video_url += '&autoplay=1';
-            }
-        }
+        // if ( envira_video_url.search( 'autoplay=1' ) === -1 ) {
+        //     if ( envira_video_url.search( 'rel=' ) === -1 ) {
+        //         envira_video_url += '?rel=0&autoplay=1';
+        //     } else {
+        //         envira_video_url += '&autoplay=1';
+        //     }
+        // }
 
         // Destroy any other instances of Envira Video iframes
-        $( 'div.envira-video-help' ).remove();
+        // $( 'div.envira-video-help' ).remove();
 
         // Get the intro paragraph
         var envira_video_paragraph = $( this ).closest( 'p.envira-intro' );

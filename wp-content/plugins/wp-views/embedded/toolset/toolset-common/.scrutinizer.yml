@@ -1,0 +1,27 @@
+--- 
+build:
+  dependencies:
+    before:
+      - "sudo apt-get -y install dnsutils"
+      - "ssh-keyscan -H -p 10022 git.onthegosystems.com >> ~/.ssh/known_hosts"
+      - "ssh-keyscan -H -p 10022 $(dig -t a +short git.onthegosystems.com) >> ~/.ssh/known_hosts"
+  cache:
+    directories:
+      - vendor/
+  environment:
+    php: 5.6
+    mysql: 5.5
+  tests:
+    override:
+      -
+        on_node: 1
+        idle_timeout: 4800
+        command: "vendor/bin/phpunit --coverage-clover ./coverage.xml"
+        coverage:
+          file: coverage.xml
+          format: php-clover
+      -
+        on_node: 2
+        idle_timeout: 4800
+        command: "phpcs-run ./"
+

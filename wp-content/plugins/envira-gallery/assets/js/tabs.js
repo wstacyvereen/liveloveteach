@@ -49,7 +49,7 @@
             e.preventDefault();
 
             // Destroy all instances of Envira Video iframes
-            $( 'div.envira-video-help' ).remove();
+            // $( 'div.envira-video-help' ).remove();
 
             // Get the clicked element and the nav tabs
             var envira_tabs                 = $( this ).closest( envira_tabs_nav ),

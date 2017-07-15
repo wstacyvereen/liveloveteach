@@ -297,7 +297,7 @@ class WPV_Admin_Messages {
 			case 'limit_and_offset':
 				$return = array(
 					'title' => __('Limit and Offset', 'wpv-views'),
-					'content' => __('You can limit the number of results returned by the query and set an offset. Please note that this option is not intended for pagination and sliders, but for static Limit and Offset settings.', 'wpv-views')
+					'content' => __('You can limit the number of results returned by the query and set an offset.', 'wpv-views')
 				);
 				break;
 			case 'filter_the_results':
@@ -1410,7 +1410,7 @@ function wpv_views_instructions_section_data( $section = '' ) {
 							. __( 'All fields must appear between these shortcodes.', 'wpv-views' )
 					),
 					array(
-						'element' => '<span class="wpv-code wpv-code-shortcode">[wpv-control]</span><br /><span class="wpv-code wpv-code-shortcode">[wpv-control-set]</span>',
+						'element' => '<span class="wpv-code wpv-code-shortcode">[wpv-control-post-taxonomy]</span><br /><span class="wpv-code wpv-code-shortcode">[wpv-control-postmeta]</span><br /><span class="wpv-code wpv-code-shortcode">[wpv-control-post-relationship]</span>',
 						'description' => __( 'A filter element.', 'wpv-views' )
 							. WPV_MESSAGE_SPACE_CHAR
 							. __( 'You can insert filter elements by clicking on the <strong>New filter</strong> button.', 'wpv-views' )
@@ -2034,15 +2034,26 @@ function render_view_dialogs( $args, $dismissed_dialogs ) {
 		* Pagination controls dialog
 		*/
 		?>
-		<div class="js-wpv-pagination-form-dialog">
+		<div class="js-wpv-pagination-form-dialog toolset-shortcode-gui-dialog-container wpv-shortcode-gui-dialog-container">
 			<div class="wpv-dialog wpv-dialog-pagination-wizard js-wpv-dialog-pagination-wizard">
-				
-				<div class="wpv-pagination-wizard-wrapper">
-					<p>
-						<input type="checkbox" name="pagination_display" class="js-wpv-pagination-dialog-display" id="pagination-include-wrapper" />
-						<label for="pagination-include-wrapper"><?php _e('Don\'t show pagination elements if there is only one page','wpv-views'); ?></label>
-					</p>
-				</div>
+				<?php
+				$bootstrap_version = Toolset_Settings::get_instance();
+				$bs_version = ( isset( $bootstrap_version->toolset_bootstrap_version ) ) ? $bootstrap_version->toolset_bootstrap_version : '-1';
+				if ( '-1' == $bs_version ) {
+					?>
+                    <p class="toolset-alert toolset-alert-info js-wpv-pagination-wizard-bootstrap-notice">
+						<?php
+						echo esc_html( __( 'Pagination works better if the activated theme or plugins include Bootstrap.', 'wpv-views' ) );
+						echo WPV_MESSAGE_SPACE_CHAR;
+						echo
+							'<a href="https://wp-types.com/documentation/user-guides/views-pagination/?utm_source=viewsplugin&utm_campaign=views&utm_medium=edit-view-pagination-controls-dialog&utm_term=Check the documentation" title="' . esc_attr( __( 'Documentation for pagination links', 'wpv-views' ) ) . '" target="blank">'
+							. esc_html( __( 'Check the documentation', 'wpv-views' ) )
+							. '</a>';
+						?>
+                    </p>
+					<?php
+				}
+				?>
 				
 				<h3><?php _e('Pagination data', 'wpv-views'); ?></h3>
 				<div class="wpv-dialog-pagination-wizard-controls">
@@ -2079,18 +2090,13 @@ function render_view_dialogs( $args, $dismissed_dialogs ) {
 					<div class="wpv-dialog-pagination-wizard-item js-wpv-dialog-pagination-wizard-item">
 						<div class="wpv-dialog-pagination-wizard-data">
 							<input type="checkbox" name="pagination_control" class="js-wpv-pagination-dialog-control" id="pagination-include-controls" value="page_controls" data-target="next-previous-controls" />
-							<label for="pagination-include-controls"><?php _e('Next and previous page controls','wpv-views'); ?></label>
-							<span class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra js-wpv-pagination-shortcode-attribute-container">
-								<label for="wpv-pagination-insert-prev-force">
-								<?php printf( 
-									__( 'and %s include even on the first and last pages', 'wpv-views' ), 
-									'<input type="checkbox" 
-									name="wpv_pagination_insert_prev_force" id="wpv-pagination-insert-prev-force"
-									class="js-wpv-pagination-shortcode-attribute" 
-									data-attribute="force" value="true" />'
-									); ?>
-								</label>
-							</span>
+							<label for="pagination-include-controls"><?php _e('Previous and Next page controls','wpv-views'); ?></label>
+                            <div class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra">
+                                <p>
+                                    <input type="checkbox" name="wpv_pagination_insert_prev_force" id="wpv-pagination-insert-prev-force" class="js-wpv-pagination-shortcode-attribute" data-attribute="force" value="true" />
+                                    <label for="wpv-pagination-insert-prev-force"><?php echo esc_html( __( 'Include the Previous/Next links on the first and the last pages','wpv-views' ) ); ?></label>
+								</p>
+                            </div>
 						</div>
 						<div class="wpv-dialog-pagination-wizard-preview js-wpv-dialog-pagination-wizard-preview disabled">
 							<p class="wpv-pagination-preview-element js-wpv-pagination-preview-element next-previous-controls" data-name="next-previous-controls">
@@ -2106,6 +2112,22 @@ function render_view_dialogs( $args, $dismissed_dialogs ) {
 							<input type="checkbox" name="pagination_control" class="js-wpv-pagination-dialog-control" id="pagination-include-nav-links" value="page_nav_links" data-target="nav-controls-link" />
 							<label for="pagination-include-nav-links"><?php _e('Navigation controls using links','wpv-views'); ?></label>
 							<div class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra">
+                                <p>
+                                    <input type="checkbox"
+                                           name="sub_pagination_control"
+                                           class="js-wpv-pagination-sub-dialog-control js-wpv-dialog-pagination-wizard-item-extra-nav-links"
+                                           id="js-wpv-dialog-pagination-wizard-item-extra-nav-links-previous-next"
+                                           data-attr="previous_next_links" value="true" />
+                                    <label for="js-wpv-dialog-pagination-wizard-item-extra-nav-links-previous-next"><?php echo esc_html( __( 'Add Previous/Next page controls','wpv-views' ) ); ?></label>
+                                </p>
+                                <p class="js-wpv-dialog-pagination-wizard-sub-item-dependant-previous_next_links">
+                                    <input type="checkbox"
+                                           data-attr="force_previous_next"
+                                           value="true"
+                                           id="wpv-dialog-pagination-wizard-item-extra-nav-links-next-prev-force"
+                                           class="js-wpv-pagination-shortcode-attribute js-wpv-dialog-pagination-wizard-item-extra-nav-links" />
+                                    <label for="wpv-dialog-pagination-wizard-item-extra-nav-links-next-prev-force"><?php echo esc_html( __( 'Include the Previous/Next links on the first and the last pages','wpv-views' ) ); ?></label>
+                                </p>
 								<p>
 									<label for="wpv-dialog-pagination-wizard-item-extra-nav-links-text"><?php _e( 'Text for link to page: ', 'wpv-views' ); ?></label> 
 									<input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-text" data-attr="anchor_text" class="js-wpv-dialog-pagination-wizard-item-extra-nav-links" placeholder="%%PAGE%%" />
@@ -2122,6 +2144,14 @@ function render_view_dialogs( $args, $dismissed_dialogs ) {
 									<label for="wpv-dialog-pagination-wizard-item-extra-nav-links-reach"><?php _e( 'Number of preceding and following pages:', 'wpv-views' ); ?></label> 
 									<input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-reach" data-attr="reach" class="js-wpv-dialog-pagination-wizard-item-extra-nav-links small-text" />
 								</p>
+                                <p class="js-wpv-dialog-pagination-wizard-sub-item-dependant-previous_next_links">
+                                    <label for="wpv-dialog-pagination-wizard-item-extra-nav-links-previous-text"><?php echo esc_html( __( 'Text for "Previous" link: ', 'wpv-views' ) ); ?></label>
+                                    <input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-previous-text" data-attr="text_for_previous_link" class="js-wpv-dialog-pagination-wizard-item-extra-nav-links" placeholder="<?php echo esc_attr( __( 'Previous', 'wpv-views' ) ); ?>" />
+                                </p>
+                                <p class="js-wpv-dialog-pagination-wizard-sub-item-dependant-previous_next_links">
+                                    <label for="wpv-dialog-pagination-wizard-item-extra-nav-links-next-text"><?php echo esc_html( __( 'Text for "Next" link: ', 'wpv-views' ) ); ?></label>
+                                    <input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-next-text" data-attr="text_for_next_link" class="js-wpv-dialog-pagination-wizard-item-extra-nav-links" placeholder="<?php echo esc_attr( __( 'Next', 'wpv-views' ) ); ?>" />
+                                </p>
 								<p style="border-top:solid 1px #dedede;padding-top:5px;">
 									<?php
 									echo 
@@ -2134,15 +2164,14 @@ function render_view_dialogs( $args, $dismissed_dialogs ) {
 						</div>
 						<div class="wpv-dialog-pagination-wizard-preview wpv-dialog-pagination-wizard-pagenavi-preview js-wpv-dialog-pagination-wizard-preview disabled">
 							<p class="wpv-pagination-preview-element js-wpv-pagination-preview-element" data-name="nav-controls-link">
+                                <a href="#" class="js-wpv-disable-events js-wpv-dialog-pagination-wizard-preview-previous_next_links">&laquo; <?php echo esc_html( __( 'Previous', 'wpv-views' ) ); ?></a>
 								<span class="current">1</span>&nbsp;
 								<a href="#" class="js-wpv-disable-events">2</a>&nbsp;
-								<a href="#" class="js-wpv-disable-events">3</a>&nbsp;
 								<span>...</span>&nbsp;
 								<a href="#" class="js-wpv-disable-events">10</a>&nbsp;
 								<span>...</span>&nbsp;
-								<a href="#" class="js-wpv-disable-events">20</a>&nbsp;
-								<span>...</span>&nbsp;
 								<a href="#" class="js-wpv-disable-events">27</a>&nbsp;
+                                <a href="#" class="js-wpv-disable-events js-wpv-dialog-pagination-wizard-preview-previous_next_links"><?php echo esc_html( __( 'Next', 'wpv-views' ) ); ?> &raquo;</a>
 							</p>
 						</div>
 					</div>
@@ -2173,12 +2202,43 @@ function render_view_dialogs( $args, $dismissed_dialogs ) {
 							</p>
 						</div>
 					</div>
-					
 				</div>
-				
+
+                <h3><?php echo esc_html( __( 'Output style', 'wpv-views' ) ); ?></h3>
+                <div class="wpv-dialog-pagination-wizard-controls">
+                    <div class="wpv-dialog-pagination-wizard-item js-wpv-dialog-pagination-wizard-item">
+                        <div class="wpv-dialog-pagination-wizard-data">
+                            <p>
+                                <input type="radio"
+                                       name="pagination_control"
+                                       id="wpv-pagination-bootstrap-output"
+                                       class="js-wpv-pagination-dialog-control js-wpv-pagination-output-style" value="<?php echo esc_attr( 'bootstrap' ); ?>" />
+                                <label for="wpv-pagination-bootstrap-output"><?php echo esc_html( __( 'Fully styled output', 'wpv-views' ) ); ?></label>
+                                <input type="radio"
+                                       style="margin-left:15px"
+                                       name="pagination_control"
+                                       id="wpv-pagination-raw-output"
+                                       class="js-wpv-pagination-dialog-control js-wpv-pagination-output-style"
+                                       value="<?php echo esc_attr( 'raw' ); ?>" checked="checked" />
+                                <label for="wpv-pagination-raw-output"><?php echo esc_html( __( 'Raw output', 'wpv-views' ) ); ?></label>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3><?php echo esc_html( __( 'Other pagination options', 'wpv-views' ) ); ?></h3>
+                <div class="wpv-dialog-pagination-wizard-controls">
+                    <div class="wpv-dialog-pagination-wizard-item">
+                        <div class="wpv-dialog-pagination-wizard-data">
+                            <p>
+                                <input type="checkbox" name="pagination_display" class="js-wpv-pagination-dialog-display" id="pagination-include-wrapper" />
+                                <label for="pagination-include-wrapper"><?php echo esc_html( __( 'Don\'t show pagination elements if there is only one page','wpv-views' ) ); ?></label>
+                            </p>
+                        </div>
+                    </div>
+                </div>
 			</div>
 		</div>
-		
 	</div>
 	<?php
 }
@@ -2242,7 +2302,26 @@ function render_wpa_dialogs( $args, $dismissed_dialogs ) {
 		?>
 		
 		<div id="js-wpv-archive-pagination-dialog" class="toolset-shortcode-gui-dialog-container wpv-shortcode-gui-dialog-container">
-			<div class="wpv-dialog wpv-dialog-pagination-wizard">
+			<div class="wpv-dialog wpv-dialog-pagination-wizard js-wpv-dialog-pagination-wizard">
+				<?php
+				$bootstrap_version = Toolset_Settings::get_instance();
+				$bs_version = ( isset( $bootstrap_version->toolset_bootstrap_version ) ) ? $bootstrap_version->toolset_bootstrap_version : '-1';
+				if ( '-1' == $bs_version ) {
+					?>
+                    <p class="toolset-alert toolset-alert-info js-wpv-pagination-wizard-bootstrap-notice">
+						<?php
+						echo esc_html( __( 'Pagination works better if the activated theme or plugins include Bootstrap.', 'wpv-views' ) );
+						echo WPV_MESSAGE_SPACE_CHAR;
+						echo
+							'<a href="https://wp-types.com/documentation/user-guides/custom-pagination-for-wordpress-archives/?utm_source=viewsplugin&utm_campaign=views&utm_medium=edit-wordpress-archive-pagination-controls-dialog&utm_term=Check the documentation" title="' . esc_attr( __( 'Documentation for pagination links', 'wpv-views' ) ) . '" target="blank">'
+							. esc_html( __( 'Check the documentation', 'wpv-views' ) )
+							. '</a>';
+						?>
+                    </p>
+					<?php
+				}
+				?>
+
 				<h3><?php _e( 'Pagination data', 'wpv-views' ); ?></h3>
 				<div class="wpv-dialog-pagination-wizard-controls">
 					
@@ -2289,17 +2368,15 @@ function render_wpa_dialogs( $args, $dismissed_dialogs ) {
 								class="js-wpv-archive-pagination-control" 
 								value="wpv-pager-archive-prev-page" />
 							<label for="archive-pagination-insert-prev"><?php _e( 'Link to the previous page','wpv-views' ); ?></label>
-							<span class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra js-wpv-archive-pagination-shortcode-attribute-container">
-								<label for="archive-pagination-insert-prev-force">
-								<?php printf( 
-									__( 'and %s include even on the first page', 'wpv-views' ), 
-									'<input type="checkbox" 
-									name="archive_pagination_insert_prev_force" id="archive-pagination-insert-prev-force"
-									class="js-wpv-archive-pagination-shortcode-attribute" 
-									data-attribute="force" value="true" />'
-									); ?>
-								</label>
-							</span>
+                            <div class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra js-wpv-archive-pagination-shortcode-attribute-container">
+                                <p>
+                                    <input type="checkbox"
+                                           name="archive_pagination_insert_prev_force" id="archive-pagination-insert-prev-force"
+                                           class="js-wpv-archive-pagination-shortcode-attribute"
+                                           data-attribute="force" value="true" />
+                                    <label for="archive-pagination-insert-prev-force"><?php echo esc_html( __( 'Include the Previous link on the first page.','wpv-views' ) ); ?>
+                                </p>
+                            </div>
 						</div>
 						
 						<div class="wpv-dialog-pagination-wizard-preview js-wpv-dialog-pagination-wizard-preview disabled">
@@ -2318,17 +2395,15 @@ function render_wpa_dialogs( $args, $dismissed_dialogs ) {
 								class="js-wpv-archive-pagination-control" 
 								value="wpv-pager-archive-next-page" />
 							<label for="archive-pagination-insert-next"><?php _e( 'Link to the next page','wpv-views' ); ?></label>
-							<span class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra js-wpv-archive-pagination-shortcode-attribute-container">
-								<label for="archive-pagination-insert-next-force">
-								<?php printf( 
-									__( 'and %s include even on the last page', 'wpv-views' ), 
-									'<input type="checkbox" 
-									name="archive_pagination_insert_next_force" id="archive-pagination-insert-next-force"
-									class="js-wpv-archive-pagination-shortcode-attribute" 
-									data-attribute="force" value="true" />'
-								); ?>
-								</label>
-							</span>
+                            <div class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra js-wpv-archive-pagination-shortcode-attribute-container">
+                                <p>
+                                    <input type="checkbox"
+                                           name="archive_pagination_insert_next_force" id="archive-pagination-insert-next-force"
+                                           class="js-wpv-archive-pagination-shortcode-attribute"
+                                           data-attribute="force" value="true" />
+                                    <label for="archive-pagination-insert-next-force"><?php echo esc_html( __( 'Include the Next link on the last page.','wpv-views' ) ); ?>
+                                </p>
+                            </div>
 						</div>
 						
 						<div class="wpv-dialog-pagination-wizard-preview js-wpv-dialog-pagination-wizard-preview disabled">
@@ -2348,6 +2423,22 @@ function render_wpa_dialogs( $args, $dismissed_dialogs ) {
 								value="wpv-pager-archive-nav-links" />
 							<label for="archive-pagination-include-nav-links"><?php _e('Navigation controls using links','wpv-views'); ?></label>
 							<div class="wpv-dialog-pagination-wizard-item-extra js-wpv-dialog-pagination-wizard-item-extra js-wpv-archive-pagination-shortcode-attribute-container">
+                                <p>
+                                    <input type="checkbox"
+                                           name="sub_pagination_control"
+                                           class="js-wpv-pagination-sub-dialog-control js-wpv-archive-pagination-shortcode-attribute"
+                                           id="js-wpv-dialog-pagination-wizard-item-extra-nav-links-previous-next"
+                                           data-attribute="previous_next_links" value="true" />
+                                    <label for="js-wpv-dialog-pagination-wizard-item-extra-nav-links-previous-next"><?php echo esc_html( __( 'Add Previous/Next page controls','wpv-views' ) ); ?></label>
+                                </p>
+                                <p class="js-wpv-dialog-pagination-wizard-sub-item-dependant-previous_next_links">
+                                    <input type="checkbox"
+                                           data-attribute="force_previous_next"
+                                           value="true"
+                                           id="wpv-dialog-pagination-wizard-item-extra-nav-links-next-prev-force"
+                                           class="js-wpv-pagination-shortcode-attribute js-wpv-archive-pagination-shortcode-attribute" />
+                                    <label for="wpv-dialog-pagination-wizard-item-extra-nav-links-next-prev-force"><?php echo esc_html( __( 'Include the Previous/Next links on the first and the last pages', 'wpv-views' ) ); ?></label>
+                                </p>
 								<p>
 									<label for="wpv-dialog-pagination-wizard-item-extra-nav-links-text"><?php _e( 'Text for link to page: ', 'wpv-views' ); ?></label> 
 									<input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-text" data-attribute="anchor_text" class="js-wpv-archive-pagination-shortcode-attribute" placeholder="%%PAGE%%" />
@@ -2364,6 +2455,14 @@ function render_wpa_dialogs( $args, $dismissed_dialogs ) {
 									<label for="wpv-dialog-pagination-wizard-item-extra-nav-links-reach"><?php _e( 'Number of preceding and following pages:', 'wpv-views' ); ?></label> 
 									<input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-reach" data-attribute="reach" class="js-wpv-archive-pagination-shortcode-attribute small-text" />
 								</p>
+                                <p class="js-wpv-dialog-pagination-wizard-sub-item-dependant-previous_next_links">
+                                    <label for="wpv-dialog-pagination-wizard-item-extra-nav-links-previous-text"><?php echo esc_html( __( 'Text for "Previous" link: ', 'wpv-views' ) ); ?></label>
+                                    <input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-previous-text" data-attribute="text_for_previous_link" class="js-wpv-archive-pagination-shortcode-attribute" placeholder="<?php echo esc_attr( __( 'Previous', 'wpv-views' ) ); ?>" />
+                                </p>
+                                <p class="js-wpv-dialog-pagination-wizard-sub-item-dependant-previous_next_links">
+                                    <label for="wpv-dialog-pagination-wizard-item-extra-nav-links-next-text"><?php echo esc_html( __( 'Text for "Next" link: ', 'wpv-views' ) ); ?></label>
+                                    <input type="text" id="wpv-dialog-pagination-wizard-item-extra-nav-links-next-text" data-attribute="text_for_next_link" class="js-wpv-archive-pagination-shortcode-attribute" placeholder="<?php echo esc_attr( __( 'Next', 'wpv-views' ) ); ?>" />
+                                </p>
 								<p style="border-top:solid 1px #dedede;padding-top:5px;">
 									<?php
 									echo 
@@ -2376,23 +2475,42 @@ function render_wpa_dialogs( $args, $dismissed_dialogs ) {
 						</div>
 						
 						<div class="wpv-dialog-pagination-wizard-preview wpv-dialog-pagination-wizard-pagenavi-preview js-wpv-dialog-pagination-wizard-preview disabled">
-							<p class="wpv-pagination-preview-element js-wpv-pagination-preview-element">
-								<span class="current">1</span>&nbsp;
-								<a href="#" class="js-wpv-disable-events">2</a>&nbsp;
-								<a href="#" class="js-wpv-disable-events">3</a>&nbsp;
-								<span>...</span>&nbsp;
-								<a href="#" class="js-wpv-disable-events">10</a>&nbsp;
-								<span>...</span>&nbsp;
-								<a href="#" class="js-wpv-disable-events">20</a>&nbsp;
-								<span>...</span>&nbsp;
-								<a href="#" class="js-wpv-disable-events">27</a>&nbsp;
-							</p>
+                            <p class="wpv-pagination-preview-element js-wpv-pagination-preview-element">
+                                <a href="#" class="js-wpv-disable-events js-wpv-dialog-pagination-wizard-preview-previous_next_links">&laquo; <?php echo esc_html( __( 'Previous', 'wpv-views' ) ); ?></a>
+                                <span class="current">1</span>&nbsp;
+                                <a href="#" class="js-wpv-disable-events">2</a>&nbsp;
+                                <span>...</span>&nbsp;
+                                <a href="#" class="js-wpv-disable-events">10</a>&nbsp;
+                                <span>...</span>&nbsp;
+                                <a href="#" class="js-wpv-disable-events">27</a>&nbsp;
+                                <a href="#" class="js-wpv-disable-events js-wpv-dialog-pagination-wizard-preview-previous_next_links"><?php echo esc_html( __( 'Next', 'wpv-views' ) ); ?> &raquo;</a>
+                            </p>
 						</div>
 						
 					</div>
 					
 				</div>
-				
+                <h3><?php echo esc_html( __( 'Output style', 'wpv-views' ) ); ?></h3>
+                <div class="wpv-dialog-pagination-wizard-controls">
+                    <div class="wpv-dialog-pagination-wizard-item js-wpv-dialog-pagination-wizard-item">
+                        <div class="wpv-dialog-pagination-wizard-data">
+                            <p>
+                                <input type="radio"
+                                       name="pagination_control"
+                                       id="wpv-pagination-bootstrap-output"
+                                       class="js-wpv-archive-pagination-control" value="<?php echo esc_attr( 'bootstrap' ); ?>" />
+                                <label for="wpv-pagination-bootstrap-output"><?php echo esc_html( __( 'Fully styled output', 'wpv-views' ) ); ?></label>
+                                <input type="radio"
+                                       style="margin-left:15px"
+                                       name="pagination_control"
+                                       id="wpv-pagination-raw-output"
+                                       class="js-wpv-archive-pagination-control"
+                                       value="<?php echo esc_attr( 'raw' ); ?>" checked="checked" />
+                                <label for="wpv-pagination-raw-output"><?php echo esc_html( __( 'Raw output', 'wpv-views' ) ); ?></label>
+                            </p>
+                        </div>
+                    </div>
+                </div>
 			</div>
 		</div>
 		

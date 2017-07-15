@@ -24,6 +24,10 @@
           if ($imgCaption === null) {
 
             var caption = $image.data('envira-caption');
+            if ( caption !== undefined ) {
+                caption = caption.toString();
+                caption = caption.replace('<', '&lt;');
+            }
 
             if (this.isValidCaption(caption)) { // Create only we found something
               $imgCaption = $('<div class="caption">' + caption + '</div>');

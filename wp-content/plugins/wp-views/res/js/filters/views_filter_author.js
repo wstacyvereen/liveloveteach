@@ -150,10 +150,19 @@ WPViews.AuthorFilterGUI = function( $ ) {
 	
 	$( document ).on( 'js_event_wpv_query_filter_deleted', function( event, filter_type ) {
 		if ( 'post_author' == filter_type ) {
-			self.post_current_options = '';
-			Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-manage-save-queue', { section: 'save_filter_post_author', action: 'remove' } );
+			self.clear_save_queue();
 		}
 	});
+	
+	/**
+	 * Clear the save queue from traces of this filter.
+	 *
+	 * @since 2.4.0
+	 */
+	self.clear_save_queue = function() {
+		self.post_current_options = $( self.post_options_container_selector + ' input, ' + self.post_options_container_selector + ' select' ).serialize();
+		Toolset.hooks.doAction( 'wpv-action-wpv-edit-screen-manage-save-queue', { section: 'save_filter_post_author', action: 'remove' } );
+	}
 	
 	//--------------------
 	// Manage WordPress Archives restrictions
@@ -185,6 +194,7 @@ WPViews.AuthorFilterGUI = function( $ ) {
 				}
 			}
 		}
+		return self;
 	};
 	
 	$( document ).on( 'js_event_wpv_query_filter_created', function( event, filter_type ) {
@@ -197,6 +207,37 @@ WPViews.AuthorFilterGUI = function( $ ) {
 	$( document ).on( 'js_event_wpv_save_section_loop_selection_completed', function( event ) {
 		self.manage_wordpress_archive_filter_warning();
 	});
+	
+	//--------------------
+	// Custom search filters
+	//--------------------
+	
+	/**
+	 * Adjust the dialog for inserting the wpv-control-post-author shortcode.
+	 *
+	 * @since WIP 2.4.0
+	 */
+	
+	self.frontend_filter_dialog_open = function() {
+		var type = $( '.js-wpv-shortcode-gui-attribute-wrapper-for-type #wpv-control-post-author-type' ).val();
+		switch ( type ) {
+			case 'select':
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-default_label' ).fadeIn( 'fast' );
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-label_style, .js-wpv-shortcode-gui-attribute-wrapper-for-label_class' ).hide();
+				break;
+			case 'multiselect':
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-default_label, .js-wpv-shortcode-gui-attribute-wrapper-for-label_style, .js-wpv-shortcode-gui-attribute-wrapper-for-label_class' ).hide();
+				break;
+			case 'radios':
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-default_label, .js-wpv-shortcode-gui-attribute-wrapper-for-label_style, .js-wpv-shortcode-gui-attribute-wrapper-for-label_class' ).fadeIn( 'fast' );
+				break;
+			case 'checkboxes':
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-default_label, .js-wpv-shortcode-gui-attribute-wrapper-for-label_style, .js-wpv-shortcode-gui-attribute-wrapper-for-label_class' ).hide();
+				break;
+		}
+	};
+	
+	$( document ).on( 'change', '#wpv-control-post-author-display-options .js-wpv-shortcode-gui-attribute-wrapper-for-type', self.frontend_filter_dialog_open );
 	
 	//--------------------
 	// Suggest
@@ -235,6 +276,7 @@ WPViews.AuthorFilterGUI = function( $ ) {
 		$( '.js-author-suggest:not(.js-wpv-suggest-on)' ).each( function() {
 			self.init_suggest_on_input( $( this ) );
 		});
+		return self;
 	};
 	
 	$( document ).on( 'focus', '.js-author-suggest:not(.js-wpv-suggest-on)', function() {
@@ -252,6 +294,12 @@ WPViews.AuthorFilterGUI = function( $ ) {
 			callback:	self.save_filter_post_author,
 			event:		'js_event_wpv_save_filter_post_author_completed'
 		});
+		// Register a callback to remove the filter form the save queue on demand
+		Toolset.hooks.addAction( 'wpv-action-wpv-edit-screen-clear-query-filter-save-queue', self.clear_save_queue );
+		// Callback to show/hide the frontend filter dialog sections
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-after-open-wpv-control-post-author-shortcode-dialog', self.frontend_filter_dialog_open );
+		
+		return self;
 	};
 	
 	//--------------------
@@ -259,9 +307,9 @@ WPViews.AuthorFilterGUI = function( $ ) {
 	//--------------------
 	
 	self.init = function() {
-		self.manage_wordpress_archive_filter_warning();
-		self.init_suggest();
-		self.init_hooks();
+		self.init_hooks()
+			.init_suggest()
+			.manage_wordpress_archive_filter_warning();
 	};
 	
 	self.init();

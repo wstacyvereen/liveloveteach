@@ -1,0 +1,71 @@
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.3.0
+	- Added compatibility with Toolset Types 2.2.7
+	- Added compatibility with Toolset Views 2.3.0
+	- Added the Google Maps items to the Fields and Views dialogs for frontend page builders.
+
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.2.2
+	- Fixed a bug that rejected valid latitude and longitude values.
+	- Fixed a problem with the Great Firewall of China regarding autocomplete on address fields.
+	- Fixed a bug that broke the Google Maps API key saving when Views is not installed.
+
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.2.1
+	- Fixed a bug that rejected valid latitude and longitude values.
+
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.2, AKA Colombo
+	- Added settings for hiding some Google Maps controls, like the zooming buttons, the street view toggler and the map type selection.
+	- Added name attributes to each auxiliar latitude and longitude input for address fields, so they can be used on save actions.
+	- Improved the usability related to the mandatory Google Maps API key by adding hints and messages, and making the relevant setting available even without Toolset Views.
+	- Fixed a bug that rejected valid latitude and longitude values.
+
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.1.1
+	- Added support for address fields in CRED forms submitted using AJAX.
+	- Fixed an issue with the cluster icons depending on external resources.
+	- Fixed an issue with the registered Google Maps API key not being used on the main frontend script.
+	- Fixed an issue where all Latitude/Longitude labels were focusing only on the first fields in page, and all fields had the same IDs.
+
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.1, AKA Brussels
+	- Added full support for usermeta and termmeta address fields.
+	- Added support for ID parameters on marker shortcodes, to display addresses from specific or parent posts, users, and terms.
+	- Added ability to fine-tune an address value by setting its latitude and longitude coordinates or by dragging a marker on a map.
+	- Added ability to load a map t any place on the page and update it after Views AJAX pagination or parametric search live results update.
+	- Added ability to simulate hover and click events on markers from outside the map.
+	- Fixed an issue that kept one marker popup open when another marker popup was opened.
+	- Fixed an issue on custom marker icons being offered as options after deleting them from the native Media gallery.
+	- Improved compatibility with the Embedded versions of Toolset plugins.
+	- Added compatibility with the new Toolset menu and shared settings page.
+	- Added compatibility with the Great Firewall of China with a set of filters on the Google Maps API scripts URLs.
+
+-------------------------------------------------------------------------------------------------------------------
+Toolset Maps 1.0, AKA Athens
+	- First release.
+	- Added Types compatibility with a new Address field type.
+		- Added autocomplete for Address fields.
+		- Added finetuning by providing latitude and longitude coordinates for Address fields.
+		- Added the ability to add or edit Address fields on children posts on the Fields Table of the parent post.
+		- Added the ability to display either the address value or the latitude and longitude coordinates of the stoed address.
+	- Added CRED compatibility for Types Address fields.
+		- Added autocomplete for Address fields.
+		- Added finetuning by providing latitude and longitude coordinates for Address fields.
+	- Added Views compatibility for displaying maps and markers with different data sources.
+		- Added two new shortcodes to display a map and to add markers to a map.
+		- Added the ability to display maps with markers coming from Types address fields.
+		- Added the ability to display maps with markers coming from other custom fields.
+		- Added the ability to display maps with markers coming from a pair of latitude and longitude coordinates.
+		- Added the ability to display maps with markers coming from an arbitrary address.
+		- Added autocomplete for map IDs and marker IDs.
+		- Added a security method so unique IDs are used on maps and markers.
+		- Added several options to the map shortcode, including size, zoom and centering, marker clustering, map interaction, and styles.
+		- Added several options to the marker shortcode, including address source, title and popup window, and styles.
+		- Added a mechanism to zoom into a specific marker on a map.
+		- Added a mechanism to zoom out to the original zoom level of a map.
+		- Added a mechanism to reload a map.
+		- Added a mechanism to use a custom Google Maps API key.
+		- Added an API function to set specific clustering options to a map, such as cluster images and a calculation callback to decide which image is used.
+		- Added compatibility with Views AJAX pagination so the map is automatically reloaded and shows the right markers for each Views page.
+		- Added compatibility with Views AJAX parametric search results so the map is automatically reloaded and shows the right markers for each search results.

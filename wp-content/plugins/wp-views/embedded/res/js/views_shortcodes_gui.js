@@ -60,7 +60,8 @@ WPViews.ShortcodesParser.prototype.parse = function() {
 		},
 		type:		'',
 		content:	'',
-		raw:		''
+		raw:		'',
+		original:	{}
 	};
 
 	self.current_index		= 0;
@@ -94,6 +95,15 @@ WPViews.ShortcodesParser.prototype.parse = function() {
 			message:     "Error detected. You should pass a valid textarea DOM object to constructor or init methods."
 		};
 	}
+	
+	self.shortcode_data.original = {
+		tag:	 	self.shortcode_data.tag,
+		attrs:		self.shortcode_data.attrs,
+		type:		self.shortcode_data.type,
+		content:	self.shortcode_data.content,
+		raw:		self.shortcode_data.raw
+	};
+	
 	return self.shortcode_data;
 };
 
@@ -138,9 +148,13 @@ WPViews.ShortcodesParser.prototype.insert = function( shortcode_string ) {
 
 /**
  * Codemirror parsing
+ *
+ * @todo Try to move all the parametric-related code to an action/filter executed in its own script
  */
 
 WPViews.ShortcodesParser.prototype.manage_codemirror = function() {
+	var self = this;
+	
 	this.cm.focus();
 	
 	var cursor	= this.cm.getCursor( false ),
@@ -153,7 +167,8 @@ WPViews.ShortcodesParser.prototype.manage_codemirror = function() {
 	this.textarea_content	= this.cm.getValue();
 	
 	var content_before = this.textarea_content.substring( 0, index ),
-	last_open_bracket = content_before.lastIndexOf( '[' );
+		content_after = this.textarea_content.substring( index ),
+		last_open_bracket = content_before.lastIndexOf( '[' );
 	
 	if ( 
 		last_open_bracket != -1
@@ -169,9 +184,19 @@ WPViews.ShortcodesParser.prototype.manage_codemirror = function() {
 		parsed_shortcode	= wp.shortcode.next( tag, to_parse );
 		
 		// Avoid parsing when there are numbered attributes, or when we are way past the shortcode end
+		// @todo we miss ediiting when in the closing tag for wpv-control-set and wpv-control-post-relationship :-(
 		if ( 
 			_.size( parsed_shortcode.shortcode.attrs.numeric ) == 0 
-			&& last_open_bracket + parsed_shortcode.content.length >= ( index + 1 )
+			&& (
+				last_open_bracket + parsed_shortcode.content.length >= ( index + 1 )
+				|| ( 
+					'wpv-control-post-ancestor' == tag 
+					&& content_after.indexOf( '[/wpv-control-post-relationship]' ) != -1
+				) || (
+					'wpv-control-item' == tag 
+					&& content_after.indexOf( '[/wpv-control-set]' ) != -1
+				)
+			)
 		) {
 			this.shortcode_data		= parsed_shortcode.shortcode;
 			this.shortcode_data.raw	= parsed_shortcode.content;
@@ -180,11 +205,91 @@ WPViews.ShortcodesParser.prototype.manage_codemirror = function() {
 				end:		last_open_bracket + parsed_shortcode.content.length,
 				current:	index
 			};
+			
+			if ( 'wpv-control-post-relationship' == this.shortcode_data.tag ) {
+				self.manage_codemirror_parse_inner_and_merge( 'wpv-control-post-ancestor' );
+			} else if ( 'wpv-control-post-ancestor' == this.shortcode_data.tag ) {
+				self.manage_codemirror_parse_outer_and_merge( 'wpv-control-post-relationship' );
+			} else if ( 'wpv-control-set' == this.shortcode_data.tag ) {
+				self.manage_codemirror_parse_inner_and_merge( 'wpv-control-item' );
+			} else if ( 'wpv-control-item' == this.shortcode_data.tag ) {
+				self.manage_codemirror_parse_outer_and_merge( 'wpv-control-set' );
+			}
 		}
 		
 	}
 	
 };
+
+WPViews.ShortcodesParser.prototype.manage_codemirror_parse_inner_and_merge = function( target_tag ) {
+	var current_shortcode_data = this.shortcode_data,
+		current_shortcode_content = current_shortcode_data.content,
+		first_open_bracket = current_shortcode_content.indexOf( '[' + target_tag ),
+		first_close_bracket = current_shortcode_content.indexOf( ']' );
+	
+	if (
+		first_open_bracket != -1 
+		&& first_close_bracket != -1
+	) {
+		var to_parse			= current_shortcode_content.substring( first_open_bracket ) + current_shortcode_content.substring( first_close_bracket ),
+			parsed_shortcode	= wp.shortcode.next( target_tag, to_parse );
+	
+		if ( _.size( parsed_shortcode.shortcode.attrs.numeric ) == 0 ) {
+			_.each( parsed_shortcode.shortcode.attrs.named, function( attr_value, attr_key, list ) {
+				if ( ! _.has( current_shortcode_data.attrs.named, attr_key ) ) {
+					current_shortcode_data.attrs.named[ attr_key ] = attr_value;
+				}
+			});
+			
+			this.shortcode_data.attrs = current_shortcode_data.attrs;
+		}
+	}
+	// Just need to parse current_shortcode_data.content to find the first [target_tag shortcode :-)
+}
+
+WPViews.ShortcodesParser.prototype.manage_codemirror_parse_outer_and_merge = function( target_tag ) {
+	var current_shortcode_data = this.shortcode_data,
+		current_start = this.shortcode_data.pos.start,
+		current_end = this.shortcode_data.pos.end,
+		current_index = this.shortcode_data.pos.current,
+		content_before = this.textarea_content.substring( 0, current_index ),
+		content_after = this.textarea_content.substring( current_index ),
+		last_open_bracket = content_before.lastIndexOf( '[' + target_tag ),
+		last_close_bracket = this.textarea_content.lastIndexOf( '[/' + target_tag + ']' );
+	
+	if ( last_close_bracket != -1 ) {
+		last_close_bracket = last_close_bracket + ( target_tag.length + 3 );
+	}
+	
+	if (
+		last_open_bracket != -1 
+		&& last_close_bracket != -1
+	) {
+	
+		var to_parse			= content_before.substring( last_open_bracket ) + this.textarea_content.substring( current_index ),
+			parsed_shortcode	= wp.shortcode.next( target_tag, to_parse );
+		
+		if ( 
+			_.size( parsed_shortcode.shortcode.attrs.numeric ) == 0 
+			&& last_open_bracket + parsed_shortcode.content.length >= ( current_index + 1 )
+		) {
+			_.each( parsed_shortcode.shortcode.attrs.named, function( attr_value, attr_key, list ) {
+				current_shortcode_data.attrs.named[ attr_key ] = attr_value;
+			});
+			
+			this.shortcode_data.tag = target_tag;
+			this.shortcode_data.attrs = current_shortcode_data.attrs;
+			this.shortcode_data.type = 'closed';
+			this.shortcode_data.raw	= this.textarea_content.substring( last_open_bracket, last_close_bracket );
+			this.shortcode_data.pos	= {
+				start:		last_open_bracket,
+				end:		last_close_bracket,
+				current:	current_index
+			};
+		}
+		
+	}
+}
 
 /**
  * TinyMCE parsing
@@ -278,7 +383,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 	 * @note Typess access this directly, so we can not better rename it yet.
 	 */
 	self.shortcode_gui_insert			= 'insert';
-	self.shortcode_gui_valid_actions	= [ 'insert', 'create', 'save', 'append', 'edit' ];
+	self.shortcode_gui_valid_actions	= [ 'insert', 'create', 'save', 'append', 'edit', 'skip' ];
 	
 	/**
 	 * Set of shortcode fields to display in the Fields and Views dialog.
@@ -342,11 +447,18 @@ WPViews.ShortcodesGUI = function( $ ) {
 	self.views_conditional_use_gui		= true;
 
 	/**
+	 * Cache for the native post fields items as an array, so we only need to AJAX load it once.
+	 *
+	 * @since 2.3.2
+	 */
+	self.post_fields_list = false;
+	
+	/**
 	 * Cache for the native post fields section items, so we only need to AJAX load it once.
 	 *
-	 * @since unknown
+	 * @since 1.10.0
 	 */
-	self.post_field_section = false;
+	self.post_fields_section = false;
 
 	/**
 	 * Validation patterns
@@ -455,23 +567,29 @@ WPViews.ShortcodesGUI = function( $ ) {
 	 * @see wpv-action-wpv-shortcodes-gui-do-gui-action
 	 *
 	 * @param object shortcode_data
-	 *     shortcode	string	The shortcode just processed.
-	 *     name			string	The name of the processed shortcode.
-	 *     attributes	object	A key => value set of attribute pairs.
-	 *     content		string	The shortcode content when it is not self-closing.
+	 *     shortcode	    string	The shortcode just processed.
+	 *     name			    string	The name of the processed shortcode.
+	 *     attributes	    object	A key => value set of attribute pairs.
+	 *     raw_attributes	object	A key => value set of attribute pairs, as taken from the shortcode dialog.
+	 *     content		    string	The shortcode content when it is not self-closing.
 	 *
 	 * @since 2.3.0
 	 */
 	self.do_shortcode_gui_action = function( shortcode_data ) {
 		var defaults = {
-				shortcode:	'',
-				name:		'',
-				attributes:	{},
-				content:	''
+				shortcode:		'',
+				name:			'',
+				attributes:		{},
+				raw_attributes: {},
+				content:		''
 			},
-			shortcode_data_safe		= _.defaults( shortcode_data, defaults ),
-			shortcode_name			= shortcode_data_safe.name,
+			shortcode_data_safe		= _.defaults( shortcode_data, defaults );
+		
+		shortcode_data_safe = Toolset.hooks.applyFilters( 'wpv-filter-wpv-shortcodes-gui-before-do-action', shortcode_data_safe );
+		
+		var shortcode_name			= shortcode_data_safe.name,
 			shortcode_atts			= shortcode_data_safe.attributes,
+			shortcode_raw_atts		= shortcode_data_safe.raw_attributes,
 			shortcode_content		= shortcode_data_safe.content,
 			shortcode_string		= shortcode_data_safe.shortcode,
 			shortcode_gui_action	= self.get_shortcode_gui_action();
@@ -483,7 +601,24 @@ WPViews.ShortcodesGUI = function( $ ) {
 			return;
 		}
 		
+		/**
+		 * Custom action executed before performing the shortcodes GUI action.
+		 *
+		 * @param object shortcode_data_safe
+		 *     shortcode	    string	The shortcode just processed.
+		 *     name			    string	The name of the processed shortcode.
+		 *     attributes	    object	A key => value set of attribute pairs.
+		 *     raw_attributes	object	A key => value set of attribute pairs, as taken from the shortcode dialog.
+		 *     content		    string	The shortcode content when it is not self-closing.
+		 * @param string shortcode_gui_action The action to execute
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-before-do-action', shortcode_data_safe, shortcode_gui_action );
+		
 		switch ( shortcode_gui_action ) {
+			case 'skip':
+				break;
 			case 'create':
 				
 				/**
@@ -555,12 +690,28 @@ WPViews.ShortcodesGUI = function( $ ) {
 		}
 		
 		/**
+		 * Custom action executed after performing the shortcodes GUI action.
+		 *
+		 * @param object shortcode_data_safe
+		 *     shortcode	    string	The shortcode just processed.
+		 *     name			    string	The name of the processed shortcode.
+		 *     attributes	    object	A key => value set of attribute pairs.
+		 *     raw_attributes	object	A key => value set of attribute pairs, as taken from the shortcode dialog.
+		 *     content		    string	The shortcode content when it is not self-closing.
+		 * @param string shortcode_gui_action The action to execute
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-after-do-action', shortcode_data_safe, shortcode_gui_action );
+		
+		/**
 		 * Custom event fired when a shortcode has been processed.
 		 *
 		 * @param object shortcode_data_safe
 		 *     shortcode	string	The shortcode just processed.
 		 *     name			string	The name of the processed shortcode.
 		 *     attributes	object	A key => value set of attribute pairs.
+		 *     raw_attributes	object	A key => value set of attribute pairs, as collected from the dialog.
 		 *     content		string	The shortcode content when it is not self-closing.
 		 *
 		 * @since 2.3.0
@@ -584,10 +735,11 @@ WPViews.ShortcodesGUI = function( $ ) {
 	$( document ).on( 'js_types_shortcode_created', function( event, shortcode_to_insert ) {
 		
 		var shortcode_data = {
-			shortcode:	shortcode_to_insert,
-			name:		'types',
-			attributes:	{},
-			content:	''
+			shortcode:		shortcode_to_insert,
+			name:			'types',
+			attributes:		{},
+			raw_attributes:	{},
+			content:		''
 		};
 		
 		self.do_shortcode_gui_action( shortcode_data );
@@ -608,10 +760,11 @@ WPViews.ShortcodesGUI = function( $ ) {
 		
 		var shortcode_gui_action = self.get_shortcode_gui_action(),
 			shortcode_data = {
-				shortcode:	shortcode_to_insert,
-				name:		shortcode_name,
-				attributes:	shortcode_attribute_values,
-				content:	shortcode_content
+				shortcode:		shortcode_to_insert,
+				name:			shortcode_name,
+				attributes:		shortcode_attribute_values,
+				raw_attributes:	shortcode_attribute_values,
+				content:		shortcode_content
 			};
 		
 		if ( shortcode_gui_action != 'insert' ) {
@@ -639,6 +792,8 @@ WPViews.ShortcodesGUI = function( $ ) {
 		
 		// Build a parsers object using editor as key, so we get a parser on demand when needed, and parse at each time :-)
 		shortcode_data	= WPViews.ShortcodesParser_instance[ editor ].parse();
+		
+		shortcode_data = Toolset.hooks.applyFilters( 'wpv-filter-wpv-shortcodes-gui-maybe-edit-shortcode-data', shortcode_data );
 		
 		if ( 
 			_.contains( wpv_shortcodes_gui_texts.shortcodes_with_gui, shortcode_data.tag ) 
@@ -676,6 +831,103 @@ WPViews.ShortcodesGUI = function( $ ) {
 		
 		self.wpv_insert_shortcode_dialog_open( dialog_data );
 	};
+	
+	self.edit_legacy_custom_search_shortcodes = function( shortcode_data ) {
+		if ( shortcode_data.tag == 'wpv-control' ) {
+			// Support editing legacy wpv-control shortcodes:
+			// This will read them and transform their os attributes to the new ones, 
+			// adjusting the 'output' arrribute value as `legacy'
+			if ( ! _.has( shortcode_data.attrs.named, 'output' ) ) {
+				shortcode_data.attrs.named.output = 'legacy';
+			}
+			if ( _.has( shortcode_data.attrs.named, 'taxonomy' ) ) {
+				shortcode_data.tag = 'wpv-control-post-taxonomy';
+				if ( _.has( shortcode_data.attrs.named, 'taxonomy_orderby' ) ) {
+					shortcode_data.attrs.named.orderby = shortcode_data.attrs.named.taxonomy_orderby;
+					delete shortcode_data.attrs.named['taxonomy_orderby'];
+				}
+				if ( _.has( shortcode_data.attrs.named, 'taxonomy_order' ) ) {
+					shortcode_data.attrs.named.order = shortcode_data.attrs.named.taxonomy_order;
+					delete shortcode_data.attrs.named['taxonomy_order'];
+				}
+			} else {
+				shortcode_data.tag = 'wpv-control-postmeta';
+			}
+		} else if ( shortcode_data.tag == 'wpv-control-set' ) {
+			shortcode_data.tag = 'wpv-control-post-relationship';
+			if ( ! _.has( shortcode_data.attrs.named, 'output' ) ) {
+				shortcode_data.attrs.named.output = 'legacy';
+			}
+		} else if (
+			shortcode_data.tag == 'wpv-filter-submit' 
+			|| shortcode_data.tag == 'wpv-filter-reset' 
+		) {
+			if ( ! _.has( shortcode_data.attrs.named, 'output' ) ) {
+				shortcode_data.attrs.named.output = 'legacy';
+			}
+		} else if ( shortcode_data.tag == 'wpv-filter-search-box' ) {
+			if ( ! _.has( shortcode_data.attrs.named, 'output' ) ) {
+				shortcode_data.attrs.named.output = 'legacy';
+			}
+		}
+		return shortcode_data;
+	};
+	
+	self.get_post_fields_list = function( list ) {
+		return self.post_fields_list;
+	};
+	
+	self.set_post_fields_list = function( list ) {
+		self.post_fields_list = list;
+	};
+	
+	self.shortcodes_gui_dialog_block = function( dialog_container, block_message ) {
+		var block_structure = '';
+		
+		block_structure += '<div class="wpv-shortcode-gui-dialog-container-overlay">';
+			block_structure += '<div class="wpv-transparency"></div>';
+			block_structure += '<i class="icon-lock fa fa-lock"></i>';
+			block_structure += '<div class="toolset-alert toolset-alert-error">' + block_message + '</div>';
+		block_structure += '</div>';
+		
+		dialog_container
+			.siblings( '.ui-dialog-buttonpane' )
+				.find( '.js-wpv-shortcode-gui-insert' )
+					.addClass( 'button-secondary' )
+					.removeClass( 'button-primary' )
+					.prop( 'disabled', true );
+		dialog_container
+			.find( '.js-shortcode-gui-field' )
+					.prop( 'disabled', true );
+		dialog_container
+			.find( '.wpv-dialog' )
+				.html( '<div class="wpv-shortcode-gui-dialog-hijack-content"></div>' );
+		dialog_container.append( $( block_structure ) );
+		
+		return self;
+	};
+	
+	/**
+	 *
+	 * @param data object The data we have about this scenario.
+	 *     shortcode	string	The shortcode tag.
+	 *     title		string	The dialog title.
+	 *     params		object	The initial fixed attributes for this shortcode.
+	 *     overrides	object	The attributes key->value pairs to enforce when editing a shortcode.
+	 *     nonce		string	The nonce used to populate the dialog.
+	 *     dialog		object	The jQuery UI dialog that was just opened.
+	 *
+	 *
+	 * @since 2.4.0
+	 */
+	self.maybe_block_toolset_edit_link_dialog = function( data ) {
+		if ( $( '#shortcode-gui-content-' + data.shortcode ).length == 0 ) {
+			var error_message = $( '<p />').append( $( '.' + data.shortcode + '-information' ).clone() ).html(),
+				error_container = $( '.js-insert-' + data.shortcode + '-dialog' )
+					.closest( '.js-wpv-shortcode-gui-dialog-container' );
+			self.shortcodes_gui_dialog_block( error_container, error_message );
+		}
+	}
 	
 	/**
 	 * #######################
@@ -721,17 +973,45 @@ WPViews.ShortcodesGUI = function( $ ) {
 		Toolset.hooks.addFilter( 'wpv-filter-wpv-shortcodes-gui-extend-shortcode-dialog-data', self.extend_shortcode_dialog_data, 10, 2 );
 		
 		/**
+		 * Extend the shortcode edit capability to old filter shortcodes.
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.addFilter( 'wpv-filter-wpv-shortcodes-gui-maybe-edit-shortcode-data', self.edit_legacy_custom_search_shortcodes );
+		
+		/**
+		 * Get the cached native post fields list.
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.addFilter( 'wpv-filter-wpv-shortcodes-gui-get-post-fields-list', self.get_post_fields_list );
+		
+		/**
 		 * ###############################
 		 * API actions
 		 * ###############################
 		 */
 		
 		/**
-		 * Set the current shortcodes GUI action: 'insert', 'create', 'append'.
+		 * Set the current shortcodes GUI action: 'insert', 'create', 'append', 'skip'.
 		 *
 		 * @since 2.3.0
 		 */
 		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-set-gui-action', self.set_shortcode_gui_action );
+		
+		/**
+		 * OPen the shortcodes GUI dialog, on demand.
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-open-shortcode-dialog', self.wpv_insert_shortcode_dialog_open );
+		
+		/**
+		 * Adjust the dialog for inserting shortcodes.
+		 *
+		 * @since 2.3.0
+		 */
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-shortcode-dialog-preloaded', self.after_preload_shortcode_dialog );
 		
 		/**
 		 * Adjust the dialog for inserting shortcodes.
@@ -760,6 +1040,28 @@ WPViews.ShortcodesGUI = function( $ ) {
 		 * @since 2.3.0
 		 */
 		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-edit-shortcode', self.edit_shortcode );
+		
+		/**
+		 * Set the cached native post fields list.
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-set-post-fields-list', self.set_post_fields_list );
+		
+		/**
+		 * Block a dialog to insert a shortode, on demand.
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-block-dialog', self.shortcodes_gui_dialog_block, 10, 2 );
+		
+		/**
+		 * Maybe block a dialog to insert a Toolset edit link shortode, on demand.
+		 *
+		 * @since 2.4.0
+		 */
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-after-open-toolset-edit-post-link-shortcode-dialog', self.maybe_block_toolset_edit_link_dialog );
+		Toolset.hooks.addAction( 'wpv-action-wpv-shortcodes-gui-after-open-toolset-edit-user-link-shortcode-dialog', self.maybe_block_toolset_edit_link_dialog );
 		
 		return self;
 		
@@ -809,7 +1111,15 @@ WPViews.ShortcodesGUI = function( $ ) {
 			},
 			buttons:[
 				{
-					class: 'button-secondary toolset-shortcode-gui-dialog-button-back js-wpv-shortcode-gui-button-back js-wpv-shortcode-gui-back',
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary js-wpv-shortcode-gui-button-insert js-wpv-shortcode-gui-insert',
+					text: wpv_shortcodes_gui_texts.wpv_insert_shortcode,
+					disabled: 'disabled',
+					click: function() {
+						self.wpv_insert_shortcode();
+					}
+				},
+				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary toolset-shortcode-gui-dialog-button-back js-wpv-shortcode-gui-button-back js-wpv-shortcode-gui-back',
 					text: wpv_shortcodes_gui_texts.wpv_back,
 					click: function() {
 						$( this ).dialog( "close" );
@@ -818,17 +1128,9 @@ WPViews.ShortcodesGUI = function( $ ) {
 				},
 				{
 					class: 'button-secondary toolset-shortcode-gui-dialog-button-close js-wpv-shortcode-gui-button-close js-wpv-shortcode-gui-close',
-					text: wpv_shortcodes_gui_texts.wpv_close,
+					text: wpv_shortcodes_gui_texts.wpv_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-secondary js-wpv-shortcode-gui-button-insert js-wpv-shortcode-gui-insert',
-					text: wpv_shortcodes_gui_texts.wpv_insert_shortcode,
-					disabled: 'disabled',
-					click: function() {
-						self.wpv_insert_shortcode();
 					}
 				}
 			]
@@ -868,7 +1170,15 @@ WPViews.ShortcodesGUI = function( $ ) {
 			},
 			buttons:[
 				{
-					class: 'button-secondary toolset-shortcode-gui-dialog-button-back js-wpv-shortcode-gui-button-back js-wpv-shortcode-gui-back',
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary js-wpv-shortcode-gui-button-insert js-wpv-insert-view-form-action',
+					text: wpv_shortcodes_gui_texts.wpv_insert_shortcode,
+					disabled: 'disabled',
+					click: function() {
+						self.wpv_insert_view_shortcode_to_editor();
+					}
+				},
+				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary toolset-shortcode-gui-dialog-button-back js-wpv-shortcode-gui-button-back js-wpv-shortcode-gui-back',
 					text: wpv_shortcodes_gui_texts.wpv_back,
 					click: function() {
 						$( this ).dialog( "close" );
@@ -877,17 +1187,9 @@ WPViews.ShortcodesGUI = function( $ ) {
 				},
 				{
 					class: 'button-secondary toolset-shortcode-gui-dialog-button-close js-wpv-shortcode-gui-button-close',
-					text: wpv_shortcodes_gui_texts.wpv_close,
+					text: wpv_shortcodes_gui_texts.wpv_cancel,
 					click: function() {
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-secondary js-wpv-shortcode-gui-button-insert js-wpv-insert-view-form-action',
-					text: wpv_shortcodes_gui_texts.wpv_insert_shortcode,
-					disabled: 'disabled',
-					click: function() {
-						self.wpv_insert_view_shortcode_to_editor();
 					}
 				}
 			]
@@ -939,8 +1241,16 @@ WPViews.ShortcodesGUI = function( $ ) {
 			},
 			buttons:[
 				{
+					class: 'toolset-shortcode-gui-dialog-button-align-right button-secondary js-wpv-shortcode-gui-insert',
+					text: wpv_shortcodes_gui_texts.wpv_insert_shortcode,
+					disabled: 'disabled',
+					click: function() {
+						self.wpv_insert_view_conditional_shortcode();
+					}
+				},
+				{
 					class: 'button-secondary toolset-shortcode-gui-dialog-button-close js-wpv-shortcode-gui-close',
-					text: wpv_shortcodes_gui_texts.wpv_close,
+					text: wpv_shortcodes_gui_texts.wpv_cancel,
 					click: function() {
 						// remove wpv-conditional from QTags:opened tags
 						self.wpv_conditional_close = false;
@@ -955,14 +1265,6 @@ WPViews.ShortcodesGUI = function( $ ) {
 							self.wpv_conditional_object.e.value = self.wpv_conditional_object.t.display;
 						}
 						$( this ).dialog( "close" );
-					}
-				},
-				{
-					class: 'button-secondary js-wpv-shortcode-gui-insert',
-					text: wpv_shortcodes_gui_texts.wpv_insert_shortcode,
-					disabled: 'disabled',
-					click: function() {
-						self.wpv_insert_view_conditional_shortcode();
 					}
 				}
 			]
@@ -993,15 +1295,6 @@ WPViews.ShortcodesGUI = function( $ ) {
 				create: function( event, ui ) {
 					$( event.target ).parent().css( 'position', 'fixed' );
 				},
-				buttons: [
-					{
-						class: 'button-primary',
-						text: wpv_shortcodes_gui_texts.wpv_close,
-						click: function() {
-							$( this ).dialog( "close" );
-						}
-					},
-				],
 				open: function( event, ui ) {
 					$( 'body' ).addClass('modal-open');
 					// Hide top links if div too small
@@ -1036,15 +1329,6 @@ WPViews.ShortcodesGUI = function( $ ) {
 				create: function( event, ui ) {
 					$( event.target ).parent().css( 'position', 'fixed' );
 				},
-				buttons: [
-					{
-						class: 'button-primary',
-						text: wpv_shortcodes_gui_texts.wpv_close,
-						click: function() {
-							$( this ).dialog( "close" );
-						}
-					},
-				],
 				open: function( event, ui ) {
 					$( 'body' ).addClass('modal-open');
 					// Hide top links if div too small
@@ -1079,15 +1363,6 @@ WPViews.ShortcodesGUI = function( $ ) {
 				create: function( event, ui ) {
 					$( event.target ).parent().css( 'position', 'fixed' );
 				},
-				buttons: [
-					{
-						class: 'button-primary',
-						text: wpv_shortcodes_gui_texts.wpv_close,
-						click: function() {
-							$( this ).dialog( "close" );
-						}
-					},
-				],
 				open: function( event, ui ) {
 					$( 'body' ).addClass('modal-open');
 					// Hide top links if div too small
@@ -1128,15 +1403,6 @@ WPViews.ShortcodesGUI = function( $ ) {
 			create: function( event, ui ) {
 				$( event.target ).parent().css( 'position', 'fixed' );
 			},
-			buttons: [
-				{
-					class: 'button-primary',
-					text: wpv_shortcodes_gui_texts.wpv_close,
-					click: function() {
-						$( this ).dialog( "close" );
-					}
-				},
-			],
 			open: function( event, ui ) {
 				// TODO: close shortcode generator dialog now
 				if ( _.has( self.shortcodes_wrapper_dialogs, self.shortcodes_set ) ) {
@@ -1207,6 +1473,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 		$.each( wpv_shortcodes_gui_texts.integrated_inputs, function( key, input_selector ) {
             $( document )
 				.on( 'focus', input_selector, function() {
+					// @todo check whether this takes the focus out of the input
 					if ( $( this ).parent( '.js-wpv-fields-and-views-in-input-wrapper' ).length == 0 ) {
 						$( this ).wrap( '<span class="js-wpv-fields-and-views-in-input-wrapper" style="display:inline; position:relative;"></span>' );
 					}
@@ -1427,8 +1694,9 @@ WPViews.ShortcodesGUI = function( $ ) {
 			}
 		});
 
-		self.manage_shortcodes_dialog_buttonpane();
-
+		Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-shortcode-dialog-preloaded', data_for_shortcode_wpv_view_dialog_requested_opened );
+		Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-shortcode-wpv-view-dialog-preloaded', data_for_shortcode_wpv_view_dialog_requested_opened );
+		
 		self.dialog_insert_view.html( self.shortcodeDialogSpinnerContent );
 		
 		$.ajax({
@@ -1444,7 +1712,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 					.addClass( 'button-primary' )
 					.removeClass( 'button-secondary' )
 					.prop( 'disabled', false );
-				$('.js-wpv-shortcode-gui-tabs')
+				self.dialog_insert_view.find( '.js-wpv-shortcode-gui-tabs' )
 					.tabs({
 						beforeActivate: function( event, ui ) {
 							if (
@@ -1692,10 +1960,11 @@ WPViews.ShortcodesGUI = function( $ ) {
 		self.dialog_insert_view.dialog( 'close' );
 		
 		var shortcode_data = {
-			shortcode:	shortcode_to_insert,
-			name:		shortcode_name,
-			attributes:	shortcode_attribute_values,
-			content:	''
+			shortcode:		shortcode_to_insert,
+			name:			shortcode_name,
+			attributes:		shortcode_attribute_values,
+			raw_attributes:	shortcode_attribute_values,
+			content:		''
 		};
 		
 		self.do_shortcode_gui_action( shortcode_data );
@@ -2386,6 +2655,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 			shortcode_attribute_default_value,
 			shortcode_attribute_string = '',
 			shortcode_attribute_values = {},
+			shortcode_raw_attribute_values = {},
 			shortcode_content = '',
 			shortcode_to_insert = '',
 			shortcode_data = {},
@@ -2414,6 +2684,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 			if ( 'boolean' == typeof shortcode_attribute_default_value ) {
 				shortcode_attribute_default_value = shortcode_attribute_default_value ? 'true' :'false';
 			}
+			shortcode_raw_attribute_values[ shortcode_attribute_key ] = shortcode_attribute_value;
 			/**
 			 * Filter value
 			 */
@@ -2455,10 +2726,11 @@ WPViews.ShortcodesGUI = function( $ ) {
 		self.dialog_insert_views_conditional.dialog( 'close' );
 		
 		shortcode_data = {
-			shortcode:	shortcode_to_insert,
-			name:		shortcode_name,
-			attributes:	shortcode_attribute_values,
-			content:	shortcode_content
+			shortcode:		shortcode_to_insert,
+			name:			shortcode_name,
+			attributes:		shortcode_attribute_values,
+			raw_attributes: shortcode_raw_attribute_values,
+			content:		shortcode_content
 		};
 		
 		self.do_shortcode_gui_action( shortcode_data );
@@ -2491,10 +2763,11 @@ WPViews.ShortcodesGUI = function( $ ) {
 		}
 		
 		var shortcode_data = {
-			shortcode:	shortcode_to_insert,
-			name:		shortcode_name,
-			attributes:	{},
-			content:	''
+			shortcode:		shortcode_to_insert,
+			name:			shortcode_name,
+			attributes:		{},
+			raw_attributes:	{},
+			content:		''
 		};
 		
 		self.do_shortcode_gui_action( shortcode_data );
@@ -2556,6 +2829,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 			url					= wpv_shortcodes_gui_texts.ajaxurl,
 			data_for_ajax_call	= {
 				_wpnonce:	wpv_shortcodes_gui_texts.wpv_editor_callback_nonce,
+				gui_action:	self.get_shortcode_gui_action(),
 				action:		'wpv_shortcode_gui_dialog_create',
 				shortcode:	shortcode,
 				post_id:	parseInt( wpv_shortcodes_gui_texts.post_id ),
@@ -2591,8 +2865,9 @@ WPViews.ShortcodesGUI = function( $ ) {
 			}
 		});
 
-		self.manage_shortcodes_dialog_buttonpane();
-
+		Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-shortcode-dialog-preloaded', data_for_shortcode_dialog_requested_opened );
+		Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-shortcode-' + shortcode + '-dialog-preloaded', data_for_shortcode_dialog_requested_opened );
+		
 		self.dialog_insert_shortcode.html( self.shortcodeDialogSpinnerContent );
 		
 		$.ajax({
@@ -2616,24 +2891,27 @@ WPViews.ShortcodesGUI = function( $ ) {
 						.addClass( 'button-primary' )
 						.removeClass( 'button-secondary' )
 						.prop( 'disabled', false );
-
-					$('.js-wpv-shortcode-gui-tabs')
-						.tabs({
-							beforeActivate: function( event, ui ) {
-								var valid = self.validate_shortcode_attributes( $( '#js-wpv-shortcode-gui-dialog-container' ), ui.oldPanel, $( '#js-wpv-shortcode-gui-dialog-container' ).find( '.js-wpv-filter-toolset-messages' ) );
-								if ( ! valid ) {
-									event.preventDefault();
-									ui.oldTab.focus().addClass( 'wpv-shortcode-gui-tabs-incomplete' );
-									setTimeout( function() {
-										ui.oldTab.removeClass( 'wpv-shortcode-gui-tabs-incomplete' );
-									}, 1000 );
+					if ( self.dialog_insert_shortcode.find( '.js-wpv-shortcode-gui-tabs-list > li' ).length > 1 ) {
+						self.dialog_insert_shortcode.find( '.js-wpv-shortcode-gui-tabs' )
+							.tabs({
+								beforeActivate: function( event, ui ) {
+									var valid = self.validate_shortcode_attributes( $( '#js-wpv-shortcode-gui-dialog-container' ), ui.oldPanel, $( '#js-wpv-shortcode-gui-dialog-container' ).find( '.js-wpv-filter-toolset-messages' ) );
+									if ( ! valid ) {
+										event.preventDefault();
+										ui.oldTab.focus().addClass( 'wpv-shortcode-gui-tabs-incomplete' );
+										setTimeout( function() {
+											ui.oldTab.removeClass( 'wpv-shortcode-gui-tabs-incomplete' );
+										}, 1000 );
+									}
 								}
-							}
-						})
-						.addClass('ui-tabs-vertical ui-helper-clearfix')
-						.removeClass('ui-corner-top ui-corner-right ui-corner-bottom ui-corner-left ui-corner-all');
-					$('#js-wpv-shortcode-gui-dialog-tabs ul, #js-wpv-shortcode-gui-dialog-tabs li').removeClass('ui-corner-top ui-corner-right ui-corner-bottom ui-corner-left ui-corner-all');
-
+							})
+							.addClass('ui-tabs-vertical ui-helper-clearfix')
+							.removeClass('ui-corner-top ui-corner-right ui-corner-bottom ui-corner-left ui-corner-all');
+						$('#js-wpv-shortcode-gui-dialog-tabs ul, #js-wpv-shortcode-gui-dialog-tabs li').removeClass('ui-corner-top ui-corner-right ui-corner-bottom ui-corner-left ui-corner-all');
+					} else {
+						self.dialog_insert_shortcode.find( '.js-wpv-shortcode-gui-tabs-list' ).remove();
+					}
+					
 					Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-after-open-shortcode-dialog', data_for_shortcode_dialog_requested_opened );
 					Toolset.hooks.doAction( 'wpv-action-wpv-shortcodes-gui-after-open-' + shortcode + '-shortcode-dialog', data_for_shortcode_dialog_requested_opened );
 					// Legacy, leave for backwards compatibility
@@ -2645,6 +2923,10 @@ WPViews.ShortcodesGUI = function( $ ) {
 				}
 			}
 		});
+	};
+	
+	self.after_preload_shortcode_dialog = function( data ) {
+		self.manage_shortcodes_dialog_buttonpane( data );
 	};
 	
 	/**
@@ -2732,15 +3014,31 @@ WPViews.ShortcodesGUI = function( $ ) {
 					data.params.attributes.field = data.overrides.attributes.field;
 				}
 				break;
+			case 'wpv-control-post-taxonomy':
+				if ( 
+					_.has( data.overrides, 'attributes' ) 
+					&& _.has( data.overrides.attributes, 'taxonomy' ) 
+				) {
+					data.params.attributes.taxonomy = data.overrides.attributes.taxonomy;
+				}
+				break;
+			case 'wpv-control-postmeta':
+				if ( 
+					_.has( data.overrides, 'attributes' ) 
+					&& _.has( data.overrides.attributes, 'field' ) 
+				) {
+					data.params.attributes.field = data.overrides.attributes.field;
+				}
+				break;
 		}
 		_.each( data.params.attributes, function( value, key, list ) {
-			$( '.wpv-dialog' ).prepend( '<span class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-' + key + '" data-attribute="' + key + '" data-type="param"><input type="hidden" name="' + key + '" value="' + value + '" disabled="disabled" /></span>' );
+			data.dialog.find( '.wpv-dialog' ).prepend( '<span class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-' + key + '" data-attribute="' + key + '" data-type="param"><input type="hidden" name="' + key + '" value="' + value + '" disabled="disabled" /></span>' );
 		});
 		if ( 
 			_.has( data.params, 'content' )
 			&& data.params.content !== undefined
 		) {
-			$( '.wpv-dialog .js-wpv-shortcode-gui-content' ).val( data.params.content );
+			data.dialog.find( '.wpv-dialog .js-wpv-shortcode-gui-content' ).val( data.params.content );
 		}
 	};
 	
@@ -2761,8 +3059,8 @@ WPViews.ShortcodesGUI = function( $ ) {
 	self.manage_editing_overrides = function( data ) {
 		if ( _.has( data.overrides, 'attributes' ) ) {
 			_.each( data.overrides.attributes, function( value, key, list ) {
-				if ( $( '.wpv-dialog .js-wpv-shortcode-gui-attribute-wrapper-for-' + key ).length > 0 ) {
-					var attribute_wrapper = $( '.wpv-dialog .js-wpv-shortcode-gui-attribute-wrapper-for-' + key ),
+				if ( data.dialog.find( '.wpv-dialog .js-wpv-shortcode-gui-attribute-wrapper-for-' + key ).length > 0 ) {
+					var attribute_wrapper = data.dialog.find( '.wpv-dialog .js-wpv-shortcode-gui-attribute-wrapper-for-' + key ),
 					attribute_type = attribute_wrapper.data( 'type' );
 					switch ( attribute_type ) {
 						case 'select':
@@ -2829,7 +3127,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 							break;
 					}
 				} else {
-					$( '.wpv-dialog' ).prepend( '<span class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-' + key + '" data-attribute="' + key + '" data-type="param"><input type="hidden" name="' + key + '" value="' + value + '" disabled="disabled" /></span>' );
+					data.dialog.find( '.wpv-dialog' ).prepend( '<span class="wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper js-wpv-shortcode-gui-attribute-wrapper-for-' + key + '" data-attribute="' + key + '" data-type="param"><input type="hidden" name="' + key + '" value="' + value + '" disabled="disabled" /></span>' );
 				}				
 			});
 		}
@@ -2837,7 +3135,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 			_.has( data.overrides, 'content' )
 			&& data.overrides.content !== undefined
 		) {
-			$( '.wpv-dialog .js-wpv-shortcode-gui-content' ).val( data.overrides.content );
+			data.dialog.find( '.wpv-dialog .js-wpv-shortcode-gui-content' ).val( data.overrides.content );
 		}
 	};
 	
@@ -2853,6 +3151,8 @@ WPViews.ShortcodesGUI = function( $ ) {
 	 *     dialog		object	The jQuery UI dialog that was just opened.
 	 *
 	 * @since 1.9.0
+	 * @since 2.3.2 Added support for the [wpv-current-user] shortcode that took profile picture functionality.
+	 * @since 2.3.2 Added support for the [wpv-login-form] shortcode.
 	 */
 
 	self.manage_special_cases = function( data ) {
@@ -2870,6 +3170,12 @@ WPViews.ShortcodesGUI = function( $ ) {
 				self.manage_wpv_post_featured_image_output_show_class();
 				self.manage_wpv_post_featured_image_resize_show_relation();
 				self.manage_wpv_post_featured_image_crop_show_relation();
+				break;
+            case 'wpv-current-user':
+                self.manage_wpv_current_user_info_show_relation();
+                break;
+			case 'wpv-login-form':
+				self.manage_wpv_login_form_show_remember_me_state();
 				break;
 		}
 	};
@@ -3005,9 +3311,11 @@ WPViews.ShortcodesGUI = function( $ ) {
 	 *
 	 * @since 1.9.0
 	 * @since 2.3.0 Hide the "Back" button when the current GUI action is 'save' or 'edit'.
+	 * @since 2.3.1 Transform into a WP Hooks action callback which gets passed the shortcode data,
+	 *     because other shortcodes should not provide this "Back" button even when 'insert'-ing.
 	 */
 
-	self.manage_shortcodes_dialog_buttonpane = function() {
+	self.manage_shortcodes_dialog_buttonpane = function( data ) {
 		var shortcodes_gui_action = self.get_shortcode_gui_action();
 		$( '.js-wpv-shortcode-gui-button-insert' ).show();
 		switch ( shortcodes_gui_action ) {
@@ -3029,8 +3337,15 @@ WPViews.ShortcodesGUI = function( $ ) {
 				break;
 			case 'insert':
 			default:
-				$( '.js-wpv-shortcode-gui-button-back' ).show();
-				$( '.js-wpv-shortcode-gui-button-close .ui-button-text' ).html( wpv_shortcodes_gui_texts.wpv_close );
+				if ( 
+					data.shortcode.substr( 0, 11 ) == 'wpv-control' 
+					|| data.shortcode.substr( 0, 10 ) == 'wpv-filter'
+				) {
+					$( '.js-wpv-shortcode-gui-button-back' ).hide();
+				} else {
+					$( '.js-wpv-shortcode-gui-button-back' ).show();
+				}
+				$( '.js-wpv-shortcode-gui-button-close .ui-button-text' ).html( wpv_shortcodes_gui_texts.wpv_cancel );
 				$( '.js-wpv-shortcode-gui-button-insert .ui-button-text' ).html( wpv_shortcodes_gui_texts.wpv_insert_shortcode );
 				break;
 		}
@@ -3081,6 +3396,10 @@ WPViews.ShortcodesGUI = function( $ ) {
 				) {
 					ajax_extra_data = '&wpv_suggest_wpv_post_body_view_template_exclude=' + WPViews.ct_edit_screen.ct_data.id;
 				}
+				break;
+			case 'wpv_suggest_postmeta_default_label':
+				ajax_extra_data = '&field=' + $( '.js-wpv-shortcode-gui-attribute-wrapper-for-field > input' ).val();
+				ajax_extra_data += '&type=' + $( '#wpv-control-postmeta-type' ).val();
 				break;
 		}
 		return ajax_extra_data;
@@ -3421,6 +3740,7 @@ WPViews.ShortcodesGUI = function( $ ) {
 			shortcode_attribute_default_value,
 			shortcode_attribute_string = '',
 			shortcode_attribute_values = {},
+			shortcode_raw_attribute_values = {},
 			shortcode_content = '',
 			shortcode_to_insert = '',
 			shortcode_data = {},
@@ -3479,6 +3799,8 @@ WPViews.ShortcodesGUI = function( $ ) {
 			if ( 'boolean' == typeof shortcode_attribute_default_value ) {
 				shortcode_attribute_default_value = shortcode_attribute_default_value ? 'true' :'false';
 			}
+			
+			shortcode_raw_attribute_values[ shortcode_attribute_key ] = shortcode_attribute_value;
 			/**
 			 * Filter value
 			 */
@@ -3495,6 +3817,10 @@ WPViews.ShortcodesGUI = function( $ ) {
 		});
 		// Filter pairs key => value
 		shortcode_attribute_values = self.filter_computed_attribute_pairs( shortcode_name, shortcode_attribute_values );
+		
+		shortcode_attribute_values = Toolset.hooks.applyFilters( 'wpv-filter-wpv-shortcodes-gui-computed-attributes-pairs', shortcode_attribute_values, shortcode_name );
+		shortcode_attribute_values = Toolset.hooks.applyFilters( 'wpv-filter-wpv-shortcodes-gui-' + shortcode_name + '-computed-attributes-pairs', shortcode_attribute_values );
+		
 		// Compose the shortcode_attribute_string string
 		_.each( shortcode_attribute_values, function( value, key ) {
 			if ( value ) {
@@ -3520,25 +3846,103 @@ WPViews.ShortcodesGUI = function( $ ) {
 		self.dialog_insert_shortcode.dialog( 'close' );
 		
 		shortcode_data = {
-			shortcode:	shortcode_to_insert,
-			name:		shortcode_name,
-			attributes:	shortcode_attribute_values,
-			content:	shortcode_content
+			shortcode:		shortcode_to_insert,
+			name:			shortcode_name,
+			attributes:		shortcode_attribute_values,
+			raw_attributes:	shortcode_raw_attribute_values,
+			content:		shortcode_content
 		};
 		
 		self.do_shortcode_gui_action( shortcode_data );
 
 	};
 
+    //--------------------------------
+    // Compatibility
+    //--------------------------------
+
+    /**
+     * Handle the event that is triggered by Fusion Builder when creating the WP editor instance.	 *
+	 * The event was added as per our request because Fusion Builder does not load the WP editor using
+	 * the native PHP function "wp_editor". It creates the WP editor instance on JS, so no PHP actions
+	 * to add custom media buttons like ours are available. It generates the media button plus the toolbar that
+	 * contains it as javascript objects that it appends to its own template. It offers no way of adding our custom
+	 * buttons to it.
+	 *
+	 * @param event			The actual event.
+	 * @param editor_id		The id of the editor that is being created.
+     *
+     * @since 2.4.0
+     */
+    $( document ).on( 'fusionButtons', function( event, editor_id ) {
+		self.add_fields_and_views_button_to_dynamic_editor( editor_id );
+    });
+
+    /**
+     * add_fields_and_views_button_to_dynamic_editor
+     *
+	 * Add a "Fields and Views" button dynamically to any native editor that contains a media toolbar, given its editor ID.
+     *
+     * @since 2.4.0
+     */
+
+    self.add_fields_and_views_button_to_dynamic_editor = function( editor_id ) {
+        var media_buttons = $( '#wp-' + editor_id + '-media-buttons' ),
+            button = '<span'
+                + ' class="button js-wpv-fields-and-views-in-toolbar"'
+                + ' data-editor="' + editor_id + '">'
+                + '<i class="icon-views-logo fa fa-wpv-custom ont-icon-18 ont-color-gray"></i>'
+                + '<span class="button-label">' + wpv_shortcodes_gui_texts.wpv_fields_and_views_button_title + '</span>'
+                + '</span>',
+            fields_and_views_button = $( button );
+
+        fields_and_views_button.appendTo( media_buttons );
+    };
+
 	//--------------------------------
 	// Special cases
 	//--------------------------------
+
+    /**
+     * wpv-current-user management
+     * Handle the change in format that shows/hides the show attribute
+     *
+     * @since 2.4.0
+     */
+    $( document ).on( 'change', '#wpv-current-user-info .js-shortcode-gui-field', function() {
+        self.manage_wpv_current_user_info_show_relation();
+    });
+
+    self.manage_wpv_current_user_info_show_relation = function() {
+        if ( $( '#wpv-current-user-info' ).length ) {
+            if ( 'profile_picture' == $( '.js-shortcode-gui-field:checked', '#wpv-current-user-info' ).val() ) {
+                $( '[class*="js-wpv-shortcode-gui-attribute-wrapper-for-profile-picture"]', '#wpv-current-user-display-options' ).slideDown( 'fast' );
+            } else {
+                $( '[class*="js-wpv-shortcode-gui-attribute-wrapper-for-profile-picture"]', '#wpv-current-user-display-options' ).slideUp( 'fast' );
+            }
+        }
+    };
+	
+	$( document ).on( 'change', '#wpv-login-form-allow_remember .js-shortcode-gui-field', function() {
+        self.manage_wpv_login_form_show_remember_me_state();
+    });
+	
+	self.manage_wpv_login_form_show_remember_me_state = function() {
+		if ( $( '#wpv-login-form-allow_remember' ).length ) {
+			if ( 'true' == $( '.js-shortcode-gui-field:checked', '#wpv-login-form-allow_remember' ).val() ) {
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-remember_default', '.js-wpv-shortcode-gui-attribute-group-for-remember_me_combo' ).slideDown( 'fast' );
+			} else {
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-remember_default', '.js-wpv-shortcode-gui-attribute-group-for-remember_me_combo' ).slideUp( 'fast' );
+			}
+		}
+	}
 
 	/**
 	 * wpv-post-author management
 	 * Handle the change in format that shows/hides the show attribute
 	 *
 	 * @since 1.9.0
+	 * @since 2.4.0 Added support to handle the appearance of the profile picture functionality options.
 	 */
 	$( document ).on( 'change', '#wpv-post-author-format .js-shortcode-gui-field', function() {
 		self.manage_wpv_post_author_format_show_relation();
@@ -3548,8 +3952,13 @@ WPViews.ShortcodesGUI = function( $ ) {
 		if ( $( '#wpv-post-author-format' ).length ) {
 			if ( 'meta' == $( '.js-shortcode-gui-field:checked', '#wpv-post-author-format' ).val() ) {
 				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-meta', '#wpv-post-author-display-options' ).slideDown( 'fast' );
-			} else {
+                $( '[class*="js-wpv-shortcode-gui-attribute-wrapper-for-profile-picture"]', '#wpv-post-author-display-options' ).hide();
+			} else if ( 'profile_picture' == $( '.js-shortcode-gui-field:checked', '#wpv-post-author-format' ).val() ) {
+                $( '[class*="js-wpv-shortcode-gui-attribute-wrapper-for-profile-picture"]', '#wpv-post-author-display-options' ).slideDown( 'fast' );
+                $( '.js-wpv-shortcode-gui-attribute-wrapper-for-meta', '#wpv-post-author-display-options' ).hide();
+            } else {
 				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-meta', '#wpv-post-author-display-options' ).hide();
+                $( '[class*="js-wpv-shortcode-gui-attribute-wrapper-for-profile-picture"]', '#wpv-post-author-display-options' ).hide();
 			}
 		}
 	};
@@ -3567,15 +3976,11 @@ WPViews.ShortcodesGUI = function( $ ) {
     self.manage_wpv_post_excerpt_output_show_relation = function() {
         if ( $( '#wpv-post-excerpt-output' ).length ) {
             if ( 'formatted' == $( '.js-shortcode-gui-field:checked', '#wpv-post-excerpt-output' ).val() ) {
-                $( '.js-wpv-shortcode-gui-attribute-wrapper-for-length', '#wpv-post-excerpt-display-options' ).slideDown( 'fast', function() {
-                    $( '.js-wpv-shortcode-gui-attribute-wrapper-for-count', '#wpv-post-excerpt-display-options' ).slideDown( 'fast', function() {
-                        $( '.js-wpv-shortcode-gui-attribute-wrapper-for-more', '#wpv-post-excerpt-display-options' ).slideDown( 'fast', function() {
-                            $( '.js-wpv-shortcode-gui-attribute-wrapper-for-format', '#wpv-post-excerpt-display-options' ).slideDown( 'fast' );
-                        });
-                    });
-                });
+                $( '.js-wpv-shortcode-gui-attribute-group-for-length_combo', '#wpv-post-excerpt-display-options' ).slideDown( 'fast' );
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-more', '#wpv-post-excerpt-display-options' ).slideDown( 'fast' );
+				$( '.js-wpv-shortcode-gui-attribute-wrapper-for-format', '#wpv-post-excerpt-display-options' ).slideDown( 'fast' );
             } else {
-                $( '.js-wpv-shortcode-gui-attribute-wrapper-for-length, .js-wpv-shortcode-gui-attribute-wrapper-for-count, .js-wpv-shortcode-gui-attribute-wrapper-for-more, .js-wpv-shortcode-gui-attribute-wrapper-for-format', '#wpv-post-excerpt-display-options' ).hide();
+                $( '.js-wpv-shortcode-gui-attribute-group-for-length_combo, .js-wpv-shortcode-gui-attribute-wrapper-for-more, .js-wpv-shortcode-gui-attribute-wrapper-for-format', '#wpv-post-excerpt-display-options' ).slideUp( 'fast' );
             }
         }
     };
@@ -3798,9 +4203,10 @@ WPViews.ShortcodesGUI = function( $ ) {
 		event.stopPropagation();
 		var thiz = $( object ),
 			thiz_group_list = thiz.closest( '.js-wpv-shortcode-gui-group-list' ),
-			spinnerContainer = $( '<span class="wpv-spinner ajax-loader">' ).insertAfter( thiz ).show();
+			spinnerContainer = $( '<span class="wpv-spinner ajax-loader">' ).insertAfter( thiz ).show(),
+			post_fields_section = '';
 		thiz.prop( 'disabled', true );
-		if ( self.post_field_section ) {
+		if ( self.post_fields_section ) {
 			thiz_group_list
 				.fadeOut( 'fast', function() {
 					thiz_group_list
@@ -3808,15 +4214,23 @@ WPViews.ShortcodesGUI = function( $ ) {
 						.fadeIn( 'fast' );
 				});
 		} else {
-			var url = wpv_shortcodes_gui_texts.ajaxurl + '&action=wpv_shortcodes_gui_load_post_field_section_on_demand';
+			var url = wpv_shortcodes_gui_texts.ajaxurl + '&action=wpv_shortcodes_gui_load_post_fields_on_demand';
 			$.ajax({
 				url: url,
 				success: function( response ) {
-					self.post_field_section = response.data.section;
+					self.post_fields_list = response.data.fields;
+					_.each( self.post_fields_list, function( element, index, list ) {
+						post_fields_section += '<li class="item">';
+						post_fields_section += '<button class="button button-secondary button-small js-wpv-shortcode-gui-post-field-section-item" data-fieldkey="' + element + '">';
+						post_fields_section += element;
+						post_fields_section += '</button>';
+						post_fields_section += '</li>';
+					});
+					self.post_fields_section = post_fields_section;
 					thiz_group_list
 						.fadeOut( 'fast', function() {
 							thiz_group_list
-								.html( response.data.section )
+								.html( self.post_fields_section )
 								.fadeIn( 'fast' );
 						});
 				}

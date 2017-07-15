@@ -22,9 +22,12 @@ function relevanssi_do_excerpt($t_post, $query) {
 	$terms = relevanssi_tokenize($query, $remove_stopwords, -1);
 
 	// These shortcodes cause problems with Relevanssi excerpts
-	remove_shortcode('layerslider');
-	remove_shortcode('responsive-flipbook');
-    remove_shortcode('breadcrumb');
+    $problem_shortcodes = apply_filters('relevanssi_disable_shortcodes_excerpt',
+        array('layerslider', 'responsive-flipbook', 'breadcrumb', 'maxmegamenu', 'robogallery')
+    );
+    foreach ($problem_shortcodes as $shortcode) {
+        remove_shortcode($shortcode);
+    }
 
 	$content = apply_filters('relevanssi_pre_excerpt_content', $post->post_content, $post, $query);
 	$content = apply_filters('the_content', $content);
@@ -76,7 +79,7 @@ function relevanssi_do_excerpt($t_post, $query) {
 
 	$highlight = get_option('relevanssi_highlight');
 	if ("none" != $highlight) {
-		if ( !is_admin() || ( defined( 'DOING_AJAX' ) || DOING_AJAX ) ) {
+		if ( !is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$query = relevanssi_add_synonyms($query);
 			$excerpt = relevanssi_highlight_terms($excerpt, $query);
 		}
@@ -194,7 +197,8 @@ function relevanssi_highlight_in_docs($content) {
 				// Local search
 				if (isset($query['s'])) {
 					$q = relevanssi_add_synonyms($query['s']);
-					$highlighted_content = relevanssi_highlight_terms($content, $q);
+					$in_docs = true;
+					$highlighted_content = relevanssi_highlight_terms($content, $q, $in_docs);
 					if (!empty($highlighted_content)) $content = $highlighted_content;
 					// Sometimes the content comes back empty; until I figure out why, this tries to be a solution.
 				}
@@ -208,7 +212,7 @@ function relevanssi_highlight_in_docs($content) {
 	return $content;
 }
 
-function relevanssi_highlight_terms($excerpt, $query) {
+function relevanssi_highlight_terms($excerpt, $query, $in_docs = false) {
 	$type = get_option("relevanssi_highlight");
 	if ("none" == $type) {
 		return $excerpt;
@@ -262,7 +266,12 @@ function relevanssi_highlight_terms($excerpt, $query) {
 		mb_internal_encoding("UTF-8");
 
 	do_action('relevanssi_highlight_tokenize');
-	$terms = array_keys(relevanssi_tokenize($query, $remove_stopwords = true, $min_word_length = -1));
+
+    // Setting min_word_length to 2, in order to avoid 1-letter highlights.
+	$min_word_length = 2;
+	if (apply_filters('relevanssi_allow_one_letter_highlights', false)) $min_word_length = 1;
+
+	$terms = array_keys(relevanssi_tokenize($query, $remove_stopwords = true, $min_word_length));
 
 	if (is_array($query)) $query = implode(' ', $query); // just in case
 	$phrases = relevanssi_extract_phrases(stripslashes($query));
@@ -288,7 +297,7 @@ function relevanssi_highlight_terms($excerpt, $query) {
 		$pr_term = relevanssi_add_accent_variations($pr_term);
 
 		$undecoded_excerpt = $excerpt;
-		$excerpt = html_entity_decode($excerpt);
+		$excerpt = html_entity_decode($excerpt, ENT_QUOTES, 'UTF-8');
 
 		if ($word_boundaries) {
 //			get_option('relevanssi_fuzzy') != 'none' ? $regex = "/($pr_term)(?!(^&+)?(;))/iu" : $regex = "/(\b$pr_term|$pr_term\b)(?!(^&+)?(;))/iu";
@@ -336,11 +345,7 @@ function relevanssi_highlight_terms($excerpt, $query) {
 	}
 
 	$excerpt = relevanssi_remove_nested_highlights($excerpt, $start_emp_token, $end_emp_token);
-
-/*
-	$excerpt = htmlentities($excerpt, ENT_QUOTES, 'UTF-8');
-	// return the HTML entities that were stripped before
-*/
+	$excerpt = relevanssi_fix_entities($excerpt, $in_docs);
 
 	$excerpt = str_replace($start_emp_token, $start_emp, $excerpt);
 	$excerpt = str_replace($end_emp_token, $end_emp, $excerpt);
@@ -357,6 +362,92 @@ function relevanssi_highlight_terms($excerpt, $query) {
 function relevanssi_replace_punctuation($a) {
     $a = preg_replace('/[[:punct:]]/u', '.', $a);
     return $a;
+}
+
+function relevanssi_fix_entities($excerpt, $in_docs) {
+	if (!$in_docs) {
+		// For excerpts, use htmlentities()
+		$excerpt = htmlentities($excerpt, ENT_NOQUOTES, 'UTF-8'); // ENT_QUOTES or ENT_NOQUOTES?
+
+		// Except for allowed tags, which are turned back into tags.
+		$tags = get_option('relevanssi_excerpt_allowable_tags', '');
+		$tags = trim(str_replace("<", " <", $tags));
+        $tags = explode(" ", $tags);
+		$closing_tags = relevanssi_generate_closing_tags($tags);
+
+		$tags_entitied = htmlentities(implode(" ", $tags), ENT_NOQUOTES, 'UTF-8');  // ENT_QUOTES or ENT_NOQUOTES?
+		$tags_entitied = explode(" ", $tags_entitied);
+
+        $closing_tags_entitied = htmlentities(implode(" ", $closing_tags), ENT_NOQUOTES, 'UTF-8');  // ENT_QUOTES or ENT_NOQUOTES?
+		$closing_tags_entitied = explode(" ", $closing_tags_entitied);
+
+        $tags_entitied_regexped = array();
+        $i = 0;
+        foreach ($tags_entitied as $tag) {
+            $tag = str_replace("&gt;", "(.*?)&gt;", $tag);
+            $pattern = "~$tag~";
+            $tags_entitied_regexped[] = $pattern;
+
+            $matching_tag = $tags[$i];
+            $matching_tag = str_replace(">", '\1>', $matching_tag);
+            $tags[$i] = $matching_tag;
+            $i++;
+        }
+
+        $closing_tags_entitied_regexped = array();
+        foreach ($closing_tags_entitied as $tag) {
+            $pattern = "~" . preg_quote($tag) . "~";
+            $closing_tags_entitied_regexped[] = $pattern;
+        }
+
+        $tags = array_merge($tags, $closing_tags);
+        $tags_entitied = array_merge($tags_entitied_regexped, $closing_tags_entitied_regexped);
+
+		$excerpt = preg_replace($tags_entitied, $tags, $excerpt);
+
+        // In case there are attributes. This is the easiest solution, as
+        // using quotes and apostrophes un-entitied can't really break
+        // anything.
+        $excerpt = str_replace('&quot;', '"', $excerpt);
+        $excerpt = str_replace('&#039;', "'", $excerpt);
+	}
+	else {
+		// Running htmlentities() for whole posts tends to ruin things.
+		// However, we want to run htmlentities() for anything inside
+		// <pre> and <code> tags.
+		$excerpt = relevanssi_entities_inside($excerpt, "code");
+		$excerpt = relevanssi_entities_inside($excerpt, "pre");
+	}
+	return $excerpt;
+}
+
+function relevanssi_entities_inside($excerpt, $tag) {
+	$hits = preg_match_all('/<' . $tag . '>(.*?)<\/' . $tag . '>/im', $excerpt, $matches);
+	if ($hits > 0) {
+		$replacements = array();
+		foreach ($matches[1] as $match) {
+			if (!empty($match))	$replacements[] = "<xxx" . $tag . ">" . htmlentities($match, ENT_QUOTES, 'UTF-8') . "</xxx" . $tag . ">";
+		}
+		if (!empty($replacements)) {
+			for ($i = 0; $i < count($replacements); $i++) {
+				$patterns[] = "/<" . $tag . ">(.*?)<\/" . $tag . ">/im";
+			}
+			$excerpt = preg_replace($patterns, $replacements, $excerpt, 1);
+		}
+		$excerpt = str_replace("xxx" . $tag, $tag, $excerpt);
+	}
+	return $excerpt;
+}
+
+function relevanssi_generate_closing_tags($tags) {
+	$closing_tags = array();
+	foreach ($tags as $tag) {
+		$a = str_replace("<", "</", $tag);
+		$b = str_replace(">", "/>", $tag);
+		$closing_tags[] = $a;
+		$closing_tags[] = $b;
+	}
+	return $closing_tags;
 }
 
 function relevanssi_remove_nested_highlights($s, $a, $b) {

@@ -40,5 +40,6 @@ return array(
 	'Toolset_Condition_Theme_Layouts_Support_Theme_Active'         => TOOLSET_COMMON_PATH . '/utility/condition/theme/layouts-support/theme/active.php',
 	'Toolset_Condition_Theme_Toolset_Based_Active'                 => TOOLSET_COMMON_PATH . '/utility/condition/theme/toolset-based/active.php',
 	'Toolset_Condition_Theme_Toolset_Based_Inactive'               => TOOLSET_COMMON_PATH . '/utility/condition/theme/toolset-based/inactive.php',
+	'Toolset_Condition_Theme_Avada_Not_Active_Or_Greater_Equal_5_0'=> TOOLSET_COMMON_PATH . '/utility/condition/theme/avada/not-active-or-greater-equal-5-0.php',
 	'Toolset_Condition_User_Role_Admin'                            => TOOLSET_COMMON_PATH . '/utility/condition/user/role/admin.php',
 );

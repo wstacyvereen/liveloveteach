@@ -2151,6 +2151,7 @@ WPViews.ViewPagination = function( $ ) {
 		self.init_paged_views( data.layout );
 		self.init_preload_images( data.layout );
 		self.init_preload_pages( data.layout );
+        self.init_pagination_button_state();
 	});
 	
 	$( document ).on( 'js_event_wpv_parametric_search_results_updated', function( event, data ) {
@@ -3196,6 +3197,18 @@ WPViews.ViewPagination = function( $ ) {
 			});
 		});
 	};
+
+    /**
+     * init_pagination_button_state
+	 *
+	 * Initiate the pagination's button state in the case of a Bootstrap pager (only "Previous" and "Next" links)
+     *
+     * @since 2.4.0
+     */
+    self.init_pagination_button_state = function() {
+        $( '.pagination li:not(.disabled,.active)' ).has('span').addClass('disabled');
+        $( '.pagination li.page-item:empty' ).remove();
+	};
 	
 	self.init = function() {
 		self.init_effects();
@@ -3206,6 +3219,7 @@ WPViews.ViewPagination = function( $ ) {
 		self.init_paged_views( init_html );
 		self.init_preload_images( init_html );
 		self.init_preload_pages( init_html );
+		self.init_pagination_button_state();
 	}
 	
 	self.init();
@@ -3670,17 +3684,14 @@ WPViews.ViewParametricSearch = function( $ ) {
 		if (
 			settings.force_form_update == false 
 			&& (
-				// The form contains a post relationship filter, hence it really needs to be updated
-				settings.form.find( '.js-wpv-post-relationship-update' ).length > 0
-				|| (
-					// The form contains pagination settings and the results are set to be updated
-					(
-						settings.force_results_update == true 
-						|| settings.form.hasClass( 'js-wpv-ajax-results-enabled' ) 
-					) && _.has( WPViews.view_pagination.paged_views, settings.view_unique_id ) 
-					&& _.has( WPViews.view_pagination.paged_views[ settings.view_unique_id ], 'has_controls_in_form' )
-			&& WPViews.view_pagination.paged_views[ settings.view_unique_id ].has_controls_in_form == 'enabled'
-				)
+				// The form contains pagination settings and the results are set to be updated
+				(
+					settings.force_results_update == true 
+					|| settings.form.hasClass( 'js-wpv-ajax-results-enabled' ) 
+				) 
+				&& _.has( WPViews.view_pagination.paged_views, settings.view_unique_id ) 
+				&& _.has( WPViews.view_pagination.paged_views[ settings.view_unique_id ], 'has_controls_in_form' )
+				&& WPViews.view_pagination.paged_views[ settings.view_unique_id ].has_controls_in_form == 'enabled'
 			)
 		) {
 			settings.force_form_update = true;

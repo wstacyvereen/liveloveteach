@@ -2,7 +2,8 @@
 /*
  * This class will take care of loading bootstrap components buttons and custom buttons added by user
  * 
- * since: Layouts 1.8
+ * @since unknown Layouts 1.8
+ * @since 2.3.3 Addd the Bootstrap Grid component.
  */
 if ( ! class_exists( 'Toolset_CssComponent' ) ) {
 
@@ -86,9 +87,17 @@ if ( ! class_exists( 'Toolset_CssComponent' ) ) {
             return $buttons;
         }
         
-        public function add_register_scripts($scripts){           
+        /**
+		 * Register the Bootstrap component scripts.
+		 *
+		 * @since unknown
+		 * @since 2.3.3 Added the Bootstrap grid component.
+		 */
+
+        public function add_register_scripts($scripts){
             $scripts['toolset-css-component-buttons']	= new Toolset_Script( 'toolset-css-component-buttons', TOOLSET_COMMON_URL . "/res/js/toolset-bs-component-buttons.js", array('jquery'), false );
-            $scripts['toolset-css-component-events']	= new Toolset_Script( 'toolset-css-component-events', TOOLSET_COMMON_URL . "/res/js/toolset-bs-component-events.js", array('jquery'), true );
+            $scripts['toolset-css-component-events']	= new Toolset_Script( 'toolset-css-component-events', TOOLSET_COMMON_URL . "/res/js/toolset-bs-component-events.js", array('jquery', 'toolset-event-manager'), true );
+            $scripts['toolset-css-component-grids']		= new Toolset_Script( 'toolset-css-component-grids', TOOLSET_COMMON_URL . "/res/js/toolset-bs-component-grids.js", array( 'jquery', 'jquery-ui-dialog', 'underscore', 'icl_editor-script', 'toolset-event-manager' ), true );
             return $scripts;
         }
 
@@ -112,6 +121,13 @@ if ( ! class_exists( 'Toolset_CssComponent' ) ) {
             wp_die();
         }
 
+
+		/**
+		 * Enqueue the Bootstrap component scripts.
+		 *
+		 * @since unknown
+		 * @since 2.3.3 Added the Bootstrap grid component.
+		 */
 
         public function admin_enqueue_scripts()
         {
@@ -138,6 +154,7 @@ if ( ! class_exists( 'Toolset_CssComponent' ) ) {
             do_action('toolset_enqueue_scripts', array(
                 'toolset-css-component-buttons',
                 'toolset-css-component-events',
+				'toolset-css-component-grids',
                 'toolset-event-manager'
             ));
 
@@ -162,7 +179,113 @@ if ( ! class_exists( 'Toolset_CssComponent' ) ) {
                     ),
                 )
             );
+
+			do_action('toolset_localize_script', 'toolset-css-component-grids', 'Toolset_CssComponent_Grids', array(
+                    'button'	=> array(
+						'label'	=> __( 'Grid', 'toolset-common' )
+					),
+					'dialog'	=> array(
+						'title'		=> __( 'Bootstrap Grid', 'tolset-common' ),
+						'content'	=> $this->get_grid_dialog_content(),
+						'insert'	=> __( 'Insert grid', 'toolset-common' ),
+						'cancel'	=> __( 'Cancel', 'toolset-common' ),
+					)
+                )
+            );
         }
+
+		/**
+		 * Generate the Botstrap grid dialog content.
+		 *
+		 * @return string Bootstrap dialog content.
+		 *
+		 * @since 2.3.3
+		 */
+
+		public function get_grid_dialog_content() {
+			ob_start();
+			?>
+			<div id="js-toolset-dialog-bootstrap-grid-dialog" class="toolset-shortcode-gui-dialog-container wpv-shortcode-gui-dialog-container">
+				<div class="wpv-dialog">
+                    <div class="toolset-bootstrap-grid-types-container">
+                        <ul class="toolset-bootstrap-grid-types js-toolset-bootstrap-grid-type">
+                            <li>
+                                <figure class="grid-type selected">
+                                    <img class="item-preview" data-name="grid-type-two-even" src="<?php echo TOOLSET_COMMON_URL; ?>/res/images/toolset.bs-component/two-even.png" alt="<?php echo esc_html( __( '2 even columns', 'toolset-common' ) ); ?>">
+                                    <span><?php echo esc_html( __( '2 even columns', 'toolset-common' ) ); ?></span>
+                                </figure>
+                                <label class="radio" data-target="grid-type-two-even" for="grid-type-two-even" style="display:none">
+                                    <input type="radio" name="grid_type" id="grid-type-two-even" value="two-even" checked="checked">
+                                    <?php echo esc_html( __( '2 even columns', 'toolset-common' ) ); ?>
+                                </label>
+                            </li>
+                            <li>
+                                <figure class="grid-type">
+                                    <img class="item-preview" data-name="grid-type-two-uneven" src="<?php echo TOOLSET_COMMON_URL; ?>/res/images/toolset.bs-component/two-uneven-wide-narrow.png" alt="<?php echo esc_html( __( '2 columns (wide and narrow)', 'toolset-common' ) ); ?>">
+                                    <span><?php echo esc_html( __( '2 columns (wide and narrow)', 'toolset-common' ) ); ?></span>
+                                </figure>
+                                <label class="radio" data-target="grid-type-two-uneven" for="grid-type-two-uneven" style="display:none">
+                                    <input type="radio" name="grid_type" id="grid-type-two-uneven" value="two-uneven">
+                                    <?php echo esc_html( __( '2 columns (wide and narrow)', 'toolset-common' ) ); ?>
+                                </label>
+                            </li>
+                            <li>
+                                <figure class="grid-type">
+                                    <img class="item-preview" data-name="grid-type-three-even" src="<?php echo TOOLSET_COMMON_URL; ?>/res/images/toolset.bs-component/three-even.png" alt="<?php echo esc_html( __( '3 even columns', 'toolset-common' ) ); ?>">
+                                    <span><?php echo esc_html( __( '3 even columns', 'toolset-common' ) ); ?></span>
+                                </figure>
+                                <label class="radio" data-target="grid-type-three-even" for="grid-type-three-even" style="display:none">
+                                    <input type="radio" name="grid_type" id="grid-type-three-even" value="three-even">
+                                    <?php echo esc_html( __( '3 even columns', 'toolset-common' ) ); ?>
+                                </label>
+                            </li>
+                            <li>
+                                <figure class="grid-type">
+                                    <img class="item-preview" data-name="grid-type-three-uneven" src="<?php echo TOOLSET_COMMON_URL; ?>/res/images/toolset.bs-component/three-uneven-narrow-wide-narrow.png" alt="<?php echo esc_html( __( '3 columns (1 wide and 2 narrow)', 'toolset-common' ) ); ?>">
+                                    <span><?php echo esc_html( __( '3 columns (1 wide and 2 narrow)', 'toolset-common' ) ); ?></span>
+                                </figure>
+                                <label class="radio" data-target="grid-type-three-uneven" for="grid-type-three-uneven" style="display:none">
+                                    <input type="radio" name="grid_type" id="grid-type-three-uneven" value="three-uneven">
+                                    <?php echo esc_html( __( '3 columns (1 wide and 2 narrow)', 'toolset-common' ) ); ?>
+                                </label>
+                            </li>
+                            <li>
+                                <figure class="grid-type">
+                                    <img class="item-preview" data-name="grid-type-four-even" src="<?php echo TOOLSET_COMMON_URL; ?>/res/images/toolset.bs-component/four-even.png" alt="<?php echo esc_html( __( '4 even columns', 'toolset-common' ) ); ?>">
+                                    <span><?php echo esc_html( __( '4 even columns', 'toolset-common' ) ); ?></span>
+                                </figure>
+                                <label class="radio" data-target="grid-type-four-even" for="grid-type-four-even" style="display:none">
+                                    <input type="radio" name="grid_type" id="grid-type-four-even" value="four-even">
+                                    <?php echo esc_html( __( '4 even columns', 'toolset-common' ) ); ?>
+                                </label>
+                            </li>
+                            <li>
+                                <figure class="grid-type">
+                                    <img class="item-preview" data-name="grid-type-six-even" src="<?php echo TOOLSET_COMMON_URL; ?>/res/images/toolset.bs-component/six-even.png" alt="<?php echo esc_html( __( '6 even columns', 'toolset-common' ) ); ?>">
+                                    <span><?php echo esc_html( __( '6 even columns', 'toolset-common' ) ); ?></span>
+                                </figure>
+                                <label class="radio" data-target="grid-type-six-even" for="grid-type-six-even" style="display:none">
+                                    <input type="radio" name="grid_type" id="grid-type-six-even" value="six-even">
+                                    <?php echo esc_html( __( '6 even columns', 'toolset-common' ) ); ?>
+                                </label>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="toolset-bootstrap-grid-types-documentation">
+                        <?php
+                        $url = self::BOOTSTRAP_CSS_DOC_BASE . '#grid';
+                        $doc_link = '<a href="%s" target="_blank">%s</a>';
+                        $doc_link .= '<span style="margin-left: 3px;"></span><a style="text-decoration: none;" target="_blank" href="%s"><i class="icon-external-link fa fa-external-link icon-small"></i></a>';
+
+                        printf( $doc_link, $url, esc_html( __( 'Bootstrap Grid documentation', 'toolset-common' ) ), $url );
+                        ?>
+                    </div>
+				</div>
+			</div>
+			<?php
+			$content = ob_get_clean();
+			return $content;
+		}
 
         
         // check is allowed page currently loaded

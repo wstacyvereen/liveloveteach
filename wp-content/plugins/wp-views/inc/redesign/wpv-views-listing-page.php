@@ -58,7 +58,7 @@ function wpv_admin_menu_views_listing_page()
             wpv_maybe_show_listing_message( 'deleted', __( 'View permanently deleted.', 'wpv-views' ), __( '%d Views permanently deleted.', 'wpv-views' ) );
 
 
-            wpv_admin_view_listing_table( $views_pre_query_data, $current_post_status );
+			wpv_admin_view_listing_table( $views_pre_query_data, $current_post_status, $search_term );
 
             ?>
 
@@ -80,10 +80,12 @@ function wpv_admin_menu_views_listing_page()
  * @param array $views_pre_query_data Array with IDs of possible results and counts per post status.
  *     See wpv_prepare_view_listing_query() for details.
  * @param string $current_post_status Status of posts to display. Can be 'publish' or 'trash'.
+ * @param string $search_term Sanitized search term or empty string if no search is being performed.
  *
  * @since unknown
+ * @since 2.4 Added the $search_term parameter that contains the sanitized search term when a search is performed.
  */
-function wpv_admin_view_listing_table( $views_pre_query_data, $current_post_status ) {
+function wpv_admin_view_listing_table( $views_pre_query_data, $current_post_status, $search_term ) {
 	
 	// array of URL modifiers
 	$mod_url = array(
@@ -105,14 +107,12 @@ function wpv_admin_view_listing_table( $views_pre_query_data, $current_post_stat
 		'post_status' => $current_post_status,
 	);
 
-    $search_term = urldecode( wpv_getget( 's', '' ) );
-    $is_search = !empty( $search_term );
+	$is_search = ! empty( $search_term );
 
 	// perform the search in Views titles and decriptions and update post__in argument to $wpv_args.
 	if ( $is_search ) {
-		$wpv_args = wpv_modify_wpquery_for_search( $_GET["s"], $wpv_args );
-        // todo is sanitize_text_field needed here? (urlencode is)
-		$mod_url['s'] = urlencode( sanitize_text_field( $_GET["s"] ) );
+		$wpv_args = wpv_modify_wpquery_for_search( $search_term, $wpv_args );
+		$mod_url['s'] = urlencode( $search_term );
 	}
 
 	// apply posts_per_page coming from the URL parameters
@@ -188,7 +188,6 @@ function wpv_admin_view_listing_table( $views_pre_query_data, $current_post_stat
             <form id="posts-filter" action="" method="get">
                 <p class="search-box">
                     <label class="screen-reader-text" for="post-search-input"><?php _e('Search Views','wpv-views'); ?>:</label>
-					<?php $search_term = isset( $_GET["s"] ) ? urldecode( sanitize_text_field($_GET["s"]) ) : ''; ?>
                     <input type="search" id="post-search-input" name="s" value="<?php echo $search_term; ?>" />
                     <input type="submit" name="" id="search-submit" class="button" value="<?php echo htmlentities( __('Search Views','wpv-views'), ENT_QUOTES ); ?>" />
                     <input type="hidden" name="paged" value="1" />

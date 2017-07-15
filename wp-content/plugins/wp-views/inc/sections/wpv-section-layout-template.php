@@ -177,7 +177,9 @@ function wpv_list_view_ct_item( $template, $ct_id, $view_id, $opened = false ) {
 					
 					// Action to add Toolset buttons to the inline Content Templates editor
 					do_action( 'toolset_action_toolset_editor_toolbar_add_buttons', 'wpv-ct-inline-editor-' . $ct_id, 'views' );
-					
+					if ( ! defined( 'CT_INLINE' ) ) {
+						define("CT_INLINE", "1");
+					}
 					do_action( 'wpv_cred_forms_button', 'wpv-ct-inline-editor-' . $ct_id );
 					?>
 					<li>
@@ -594,7 +596,9 @@ function wpv_ct_loader_inline_callback() {
     $template = get_post( $_POST['id'], OBJECT, 'edit' );
     // @todo check what the hell is that constant
 	// This is for the CRED button and icon!!
-	define("CT_INLINE", "1");
+	if ( ! defined( 'CT_INLINE' ) ) {
+		define("CT_INLINE", "1");
+	}
     if ( 
 		is_object( $template ) 
 		&& isset( $template->ID ) 

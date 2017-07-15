@@ -265,33 +265,33 @@ class WPV_Editor_Ordering {
                                 <?php
 
                                 }
+								$types_usermeta_args = array(
+									'domain' => 'users'
+								);
+								$types_usermeta_fields = apply_filters( 'types_filter_query_field_definitions', array(), $types_usermeta_args );
+								$show_user_orderby_as = false;
+                                $selected_user_orderby_field_type = '';
+								if ( ! empty( $types_usermeta_fields ) ) {
+									foreach ( $types_usermeta_fields as $usermeta_field_data ) {
+										$usermeta_field_meta_key = $usermeta_field_data['meta_key'];
+										$usermeta_field_name = $usermeta_field_data['name'];
+										$usermeta_field_type = $usermeta_field_data['type'];
+										
+										$data_field_type = ' data-field-type="' . esc_attr( $usermeta_field_type ) . '"';
+										$selected = ( $view_settings['users_orderby'] == "user-field-" . $usermeta_field_meta_key ) ? ' selected="selected"' : '';
+										$option_text = sprintf( __( 'User Field - %s', 'wpv-views' ), $usermeta_field_name );
 
-                                $all_types_usermeta_fields			= get_option( 'wpcf-usermeta', array() );
-                                $show_user_orderby_as				= false;
-                                $selected_user_orderby_field_type	= '';
+										$show_user_orderby_as = ( !empty( $selected ) ) ? true : $show_user_orderby_as;
+										$selected_user_orderby_field_type = ( ! empty( $selected ) ) ? $usermeta_field_type : $selected_user_orderby_field_type;
 
-                                foreach ( $all_types_usermeta_fields as $usermeta_field_slug => $usermeta_field_data ) {
-
-                                    $usermeta_field_meta_key = $usermeta_field_data['meta_key'];
-                                    $usermeta_field_name = $usermeta_field_data['name'];
-                                    $usermeta_field_type = $usermeta_field_data['type'];
-
-                                    $data_field_type = ' data-field-type="' . esc_attr( $usermeta_field_type ) . '"';
-                                    $selected = ( $view_settings['users_orderby'] == "user-field-" . $usermeta_field_meta_key ) ? ' selected="selected"' : '';
-                                    $option_text = sprintf( __( 'User Field - %s', 'wpv-views' ), $usermeta_field_name );
-
-                                    $show_user_orderby_as = ( !empty( $selected ) ) ? true : $show_user_orderby_as;
-                                    $selected_user_orderby_field_type = ( ! empty( $selected ) ) ? $usermeta_field_type : $selected_user_orderby_field_type;
-
-                                    if ( ! in_array( $usermeta_field_type, array( 'checkboxes', 'skype' ) ) ) {
-                                        $option = '<option value="user-field-' . esc_attr( $usermeta_field_meta_key ) . '"' . $data_field_type . $selected . '>';
-                                        $option .= $option_text;
-                                        $option .= '</option>';
-                                        echo $option;
-                                    }
-
-                                }
-
+										if ( ! in_array( $usermeta_field_type, array( 'checkboxes', 'skype' ) ) ) {
+											$option = '<option value="user-field-' . esc_attr( $usermeta_field_meta_key ) . '"' . $data_field_type . $selected . '>';
+											$option .= $option_text;
+											$option .= '</option>';
+											echo $option;
+										}
+									}
+								}
                             ?>
                         </select>
                         <select name="_wpv_settings[users_order]" class="js-wpv-users-order" autocomplete="off">

@@ -45,6 +45,50 @@ ul.wpv_pagination_dots li.wpv_pagination_dots_item {
 }
 
 /**
+ * ############################
+ * Bootstrap Pagination styles
+ * ############################
+ */
+
+.pagination-dots {
+	display: block;
+	list-style: none;
+	text-align: center;
+}
+
+.pagination-dots > li {
+	display: inline-block
+}
+
+.pagination-dots > li > a.page-link {
+	display: block;
+	text-indent: -1000em;
+	width: 14px;
+	height: 14px;
+	border-radius: 15px;
+	overflow: hidden;
+	margin: .1em;
+	text-decoration: none;
+	box-shadow: none;
+	padding: 0;
+	cursor: pointer;
+}
+
+/* Styles less important than Bootstrap styling */
+.pagination-dots a {
+	border: 1px solid rgba(0,0,0,.15);
+}
+
+.pagination-dots a:hover,
+.pagination-dots .active-dot a {
+	background-color: currentColor;
+}
+
+.pagination-dots .active-dot a {
+	border-color: currentColor;
+}
+
+/**
  * #######################
  * Table sorting styles
  * #######################
@@ -192,4 +236,12 @@ div.ui-datepicker {
 
 .ui-datepicker-trigger, .wpv_date_input, .wpv-date-front-end-clear {
 	cursor: pointer;
+}
+
+.wpv-profile-picture-shape-circle {
+	border-radius: 50% !important;
+}
+
+.wpv-profile-picture-shape-square {
+	border-radius: 0% !important;
 }
