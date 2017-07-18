@@ -39,7 +39,7 @@
 		<nav id="site-navigation" class="main-navigation top-bar" role="navigation">
 			<div class="top-bar-title"></div>
 			<div class="top-bar-left">
-				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home"><img src="wp-content/uploads/2017/03/llt-logo-reversed.png" width="60px"></a>
+				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home"><img src="<?php echo esc_url( home_url( '/' ) ); ?>wp-content/uploads/2017/03/llt-logo-reversed.png" width="60px"></a>
 			</div>
 			<div class="top-bar-right">
 				<?php foundationpress_top_bar_r(); ?>
